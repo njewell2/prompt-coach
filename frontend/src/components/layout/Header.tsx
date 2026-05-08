@@ -34,21 +34,20 @@ export function Header({ user }: { user: AuthUser }) {
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         height: '60px',
       }}>
-        {/* App name + powered by */}
+        {/* CT logo + app name */}
         <button
           onClick={() => navigate('/')}
           style={{
-            display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
-            background: 'none', border: 'none', cursor: 'pointer', padding: 0, gap: '3px',
+            display: 'flex', alignItems: 'center', gap: '12px',
+            background: 'none', border: 'none', cursor: 'pointer', padding: 0,
           }}
         >
-          <span style={{ fontSize: '16px', fontWeight: 700, color: '#fff', lineHeight: 1, letterSpacing: '0.01em' }}>
-            Prompt Coach
-          </span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-            <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.04em' }}>powered by</span>
-            <CapTechLogo color="rgba(255,255,255,0.45)" height={11} />
-          </span>
+          <CapTechLogo color="#ffffff" height={20} />
+          <div style={{ borderLeft: '1px solid rgba(255,255,255,0.25)', paddingLeft: '12px' }}>
+            <div style={{ fontSize: '13px', fontWeight: 600, color: '#fff', lineHeight: 1 }}>
+              Prompt Coach
+            </div>
+          </div>
         </button>
 
         {/* Nav + user */}

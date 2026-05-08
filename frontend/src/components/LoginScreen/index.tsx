@@ -22,14 +22,12 @@ export function LoginScreen() {
       justifyContent: 'center',
       padding: '24px',
     }}>
-      {/* App title */}
+      {/* CT logo + app title */}
       <div style={{ marginBottom: '32px', textAlign: 'center' }}>
-        <h1 style={{ fontSize: '28px', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 4px' }}>
+        <CapTechLogo color="var(--captech-blue)" height={24} />
+        <h1 style={{ fontSize: '26px', fontWeight: 700, color: 'var(--text-primary)', margin: '14px 0 0' }}>
           Prompt Coach
         </h1>
-        <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0 }}>
-          Prompt engineering training by CapTech
-        </p>
       </div>
 
       {/* Card */}
@@ -52,13 +50,13 @@ export function LoginScreen() {
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: '16px' }}>
             <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Name
+              Username
             </label>
             <input
               type="text"
               value={username}
               onChange={e => setUsername(e.target.value)}
-              placeholder="Your name"
+              placeholder="e.g. nick or nick_j"
               required
               autoFocus
               style={{
