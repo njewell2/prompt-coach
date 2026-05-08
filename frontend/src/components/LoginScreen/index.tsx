@@ -22,10 +22,9 @@ export function LoginScreen() {
       justifyContent: 'center',
       padding: '24px',
     }}>
-      {/* CT logo + app title */}
+      {/* App title */}
       <div style={{ marginBottom: '32px', textAlign: 'center' }}>
-        <CapTechLogo color="var(--captech-blue)" height={24} />
-        <h1 style={{ fontSize: '26px', fontWeight: 700, color: 'var(--text-primary)', margin: '14px 0 0' }}>
+        <h1 style={{ fontSize: '28px', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
           Prompt Coach
         </h1>
       </div>
@@ -139,6 +138,12 @@ export function LoginScreen() {
       <p style={{ marginTop: '20px', fontSize: '12px', color: 'var(--text-muted)', textAlign: 'center' }}>
         Your email is only used to restore your progress — no account, no password.
       </p>
+
+      {/* Powered by */}
+      <div style={{ marginTop: '32px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <span style={{ fontSize: '11px', color: 'var(--text-muted)', letterSpacing: '0.04em' }}>powered by</span>
+        <CapTechLogo color="var(--text-muted)" height={14} />
+      </div>
     </div>
   )
 }
