@@ -91,4 +91,11 @@ export interface Challenge {
   secondary_dimensions: string[]
   hint: string
   unlock_after: string | null
+  // Optional concrete content to work on (pilot: B1). When present, the
+  // challenge switches to a 3-step guided flow and topic_prompt is ignored.
+  sample_content?: {
+    label: string
+    body: string
+    goal: string
+  }
 }

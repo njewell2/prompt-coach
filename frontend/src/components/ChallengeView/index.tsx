@@ -74,8 +74,12 @@ export function ChallengeView() {
     : null
 
   async function handleSubmit() {
-    if (!promptText.trim()) return
-    const fullPrompt = topic ? `[Topic: ${topic}]\n\n${promptText}` : promptText
+    if (!promptText.trim() || !challenge) return
+    // For sample_content challenges, include the source material so the AI
+    // judges the prompt in context. For legacy challenges, fall back to topic.
+    const fullPrompt = challenge.sample_content
+      ? `[Source material]\n${challenge.sample_content.body}\n\n[User prompt]\n${promptText}`
+      : topic ? `[Topic: ${topic}]\n\n${promptText}` : promptText
     const res = await analyze({ prompt: fullPrompt, challenge_id: challengeId, mode: 'training' })
     if (res) {
       progress.addAttempt(challengeId, fullPrompt, res.overall_score, res.dimensions, res.session_token)
@@ -93,168 +97,278 @@ export function ChallengeView() {
   const attemptCount = prog?.attempts.length ?? 0
   const bestScore = prog?.best_score ?? 0
 
+  const hasSample = !!challenge.sample_content
+
   return (
     <div ref={topRef} style={{ maxWidth: '900px', margin: '0 auto', padding: '48px 24px' }}>
-      {/* Challenge Brief */}
-      <div style={{
-        background: 'var(--bg-card)',
-        border: '1px solid var(--border)',
-        borderRadius: 'var(--radius-lg)',
-        padding: '32px',
-        marginBottom: '24px',
-        boxShadow: 'var(--shadow-card)',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+      {/* Challenge header (compact) */}
+      <div style={{ marginBottom: '28px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '6px' }}>
           <TierBadge tier={challenge.tier} />
-          <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 500 }}>
+          <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 500 }}>
             Challenge {challenge.id.toUpperCase()}
           </span>
         </div>
-        <h1 style={{ fontSize: '26px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '8px' }}>
+        <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px' }}>
           {challenge.title}
         </h1>
-        <div style={{ width: '40px', height: '3px', background: 'var(--accent-gold)', marginBottom: '16px', borderRadius: 2 }} />
-        <p style={{ fontSize: '15px', color: 'var(--text-secondary)', lineHeight: 1.7, marginBottom: '20px' }}>
+        <div style={{ width: '32px', height: '3px', background: 'var(--accent-gold)', marginBottom: '12px', borderRadius: 2 }} />
+        <p style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
           {challenge.brief}
         </p>
+      </div>
 
-        {/* Task */}
-        <div style={{
-          padding: '16px 20px',
-          background: 'var(--bg-secondary)',
-          borderRadius: 'var(--radius-md)',
-          border: '1px solid var(--border)',
-          marginBottom: '16px',
-        }}>
-          <p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
-            Your Task
-          </p>
-          <p style={{ fontSize: '15px', color: 'var(--text-primary)', lineHeight: 1.6, margin: 0 }}>
-            {challenge.structural_task}
-          </p>
-        </div>
-
-        {/* Focus dimensions */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
-          <span style={{ fontSize: '12px', color: 'var(--text-muted)', alignSelf: 'center' }}>Scoring focus:</span>
-          {challenge.focus_dimensions.map(d => (
-            <span key={d} style={{
-              fontSize: '12px', fontWeight: 600,
-              background: 'var(--captech-blue)', color: '#fff',
-              padding: '3px 10px', borderRadius: 'var(--radius-full)',
+      {hasSample ? (
+        <>
+          {/* STEP 1: Read the source material */}
+          <StepBlock number={1} title="Read this" subtitle={challenge.sample_content!.label}>
+            <div style={{
+              background: 'var(--bg-secondary)', border: '1px solid var(--border)',
+              borderRadius: 'var(--radius-md)', padding: '16px 20px',
+              fontSize: '13px', color: 'var(--text-primary)', lineHeight: 1.7,
+              whiteSpace: 'pre-wrap',
+              fontFamily: 'var(--font-sans)',
             }}>
-              {d.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-            </span>
-          ))}
-        </div>
+              {challenge.sample_content!.body}
+            </div>
+            <p style={{
+              marginTop: '12px',
+              fontSize: '13px', color: 'var(--text-secondary)',
+              display: 'flex', alignItems: 'center', gap: '6px',
+            }}>
+              <span>🎯</span>
+              <span><strong>Goal:</strong> {challenge.sample_content!.goal}</span>
+            </p>
+          </StepBlock>
 
-        {/* Hint */}
-        <button
-          onClick={() => setShowHint(h => !h)}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', color: 'var(--accent-blue)', padding: 0 }}
-        >
-          {showHint ? '▲ Hide hint' : '▼ Show hint'}
-        </button>
-        {showHint && (
-          <div style={{
-            marginTop: '10px', padding: '12px 16px',
-            background: 'var(--accent-gold-light)', borderRadius: 'var(--radius-sm)',
-            borderLeft: '3px solid var(--accent-gold)',
-            fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6,
-          }}>
-            💡 {challenge.hint}
-          </div>
-        )}
-      </div>
-
-      {/* Topic input */}
-      <div style={{
-        background: 'var(--bg-card)', border: '1px solid var(--border)',
-        borderRadius: 'var(--radius-lg)', padding: '24px', marginBottom: '24px',
-        boxShadow: 'var(--shadow-card)',
-      }}>
-        <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>
-          {challenge.topic_prompt}
-        </label>
-        <input
-          value={topic}
-          onChange={e => setTopic(e.target.value)}
-          placeholder="Your topic…"
-          style={{
-            width: '100%', padding: '10px 14px',
-            border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
-            fontSize: '14px', color: 'var(--text-primary)', background: '#fff',
-            outline: 'none', marginBottom: '10px',
-          }}
-        />
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-          {challenge.topic_examples.map(ex => (
-            <button
-              key={ex}
-              onClick={() => setTopic(ex)}
-              style={{
-                padding: '5px 12px', borderRadius: 'var(--radius-full)',
-                background: topic === ex ? 'var(--captech-blue)' : 'var(--bg-secondary)',
-                color: topic === ex ? '#fff' : 'var(--text-secondary)',
-                border: '1px solid var(--border)',
-                fontSize: '12px', fontWeight: 500, cursor: 'pointer',
-                transition: 'all 0.15s',
-              }}
-            >
-              {ex}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Prompt Workbench */}
-      <div style={{
-        background: 'var(--bg-card)', border: '1px solid var(--border)',
-        borderRadius: 'var(--radius-lg)', padding: '24px', marginBottom: '24px',
-        boxShadow: 'var(--shadow-card)',
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-          <label style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>
-            Your Prompt
-          </label>
-          <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-            {promptText.length} / 8000
-          </span>
-        </div>
-        <textarea
-          value={promptText}
-          onChange={e => setPromptText(e.target.value)}
-          placeholder="Write your prompt here…"
-          rows={8}
-          style={{
-            width: '100%', padding: '14px',
-            border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
-            fontSize: '14px', color: 'var(--text-primary)', background: '#fff',
-            resize: 'vertical', lineHeight: 1.7, outline: 'none',
-            fontFamily: 'var(--font-mono)',
-          }}
-        />
-        {attemptCount > 0 && (
-          <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '8px' }}>
-            Attempt {attemptCount + 1} · Best score: <strong style={{ color: scoreColor(bestScore, true) }}>{toDisplayScore(bestScore)}/10</strong>
-          </p>
-        )}
-        <div style={{ display: 'flex', gap: '12px', marginTop: '16px', justifyContent: 'flex-end' }}>
-          {result && (
-            <Button variant="secondary" onClick={() => { reset(); exec.reset() }}>
-              Clear
-            </Button>
-          )}
-          <Button
-            onClick={handleSubmit}
-            loading={isLoading}
-            disabled={!promptText.trim() || isLoading}
-            size="lg"
+          {/* STEP 2: Write your prompt */}
+          <StepBlock
+            number={2}
+            title="Write your prompt"
+            subtitle={challenge.structural_task}
           >
-            {attemptCount === 0 ? 'Analyze Prompt' : 'Re-analyze'}
-          </Button>
-        </div>
-      </div>
+            <textarea
+              value={promptText}
+              onChange={e => setPromptText(e.target.value)}
+              placeholder="Example: &quot;Summarize the meeting notes in 3 bullet points for my VP…&quot;"
+              rows={6}
+              style={{
+                width: '100%', padding: '14px',
+                border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
+                fontSize: '14px', color: 'var(--text-primary)', background: '#fff',
+                resize: 'vertical', lineHeight: 1.7, outline: 'none',
+                fontFamily: 'var(--font-mono)',
+                boxSizing: 'border-box',
+              }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' }}>
+              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                {promptText.length} / 8000
+              </span>
+              <button
+                onClick={() => setShowHint(h => !h)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '12px', color: 'var(--accent-blue)', padding: 0 }}
+              >
+                {showHint ? 'Hide hint' : 'Need a hint?'}
+              </button>
+            </div>
+            {showHint && (
+              <div style={{
+                marginTop: '10px', padding: '12px 16px',
+                background: 'var(--accent-gold-light)', borderRadius: 'var(--radius-sm)',
+                borderLeft: '3px solid var(--accent-gold)',
+                fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6,
+              }}>
+                💡 {challenge.hint}
+              </div>
+            )}
+            {attemptCount > 0 && (
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '12px' }}>
+                Attempt {attemptCount + 1} · Best score: <strong style={{ color: scoreColor(bestScore, true) }}>{toDisplayScore(bestScore)}/10</strong>
+              </p>
+            )}
+          </StepBlock>
+
+          {/* STEP 3: Submit */}
+          <StepBlock
+            number={3}
+            title="Score my prompt"
+            subtitle="We'll rate your prompt on the dimensions below and coach you on how to improve."
+            locked={!promptText.trim()}
+          >
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', marginBottom: '16px' }}>
+              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Scoring focus:</span>
+              {challenge.focus_dimensions.map(d => (
+                <span key={d} style={{
+                  fontSize: '11px', fontWeight: 600,
+                  background: 'var(--captech-blue)', color: '#fff',
+                  padding: '3px 10px', borderRadius: 'var(--radius-full)',
+                }}>
+                  {d.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                </span>
+              ))}
+            </div>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+              {result && (
+                <Button variant="secondary" onClick={() => { reset(); exec.reset() }}>
+                  Clear
+                </Button>
+              )}
+              <Button
+                onClick={handleSubmit}
+                loading={isLoading}
+                disabled={!promptText.trim() || isLoading}
+                size="lg"
+              >
+                {attemptCount === 0 ? 'Score my prompt →' : 'Re-score →'}
+              </Button>
+            </div>
+          </StepBlock>
+        </>
+      ) : (
+        <>
+          {/* Legacy flow for challenges without sample content */}
+          <div style={{
+            background: 'var(--bg-card)', border: '1px solid var(--border)',
+            borderRadius: 'var(--radius-lg)', padding: '24px',
+            marginBottom: '24px', boxShadow: 'var(--shadow-card)',
+          }}>
+            <div style={{
+              padding: '16px 20px',
+              background: 'var(--bg-secondary)',
+              borderRadius: 'var(--radius-md)',
+              border: '1px solid var(--border)',
+              marginBottom: '16px',
+            }}>
+              <p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
+                Your Task
+              </p>
+              <p style={{ fontSize: '15px', color: 'var(--text-primary)', lineHeight: 1.6, margin: 0 }}>
+                {challenge.structural_task}
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
+              <span style={{ fontSize: '12px', color: 'var(--text-muted)', alignSelf: 'center' }}>Scoring focus:</span>
+              {challenge.focus_dimensions.map(d => (
+                <span key={d} style={{
+                  fontSize: '12px', fontWeight: 600,
+                  background: 'var(--captech-blue)', color: '#fff',
+                  padding: '3px 10px', borderRadius: 'var(--radius-full)',
+                }}>
+                  {d.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                </span>
+              ))}
+            </div>
+
+            <button
+              onClick={() => setShowHint(h => !h)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', color: 'var(--accent-blue)', padding: 0 }}
+            >
+              {showHint ? '▲ Hide hint' : '▼ Show hint'}
+            </button>
+            {showHint && (
+              <div style={{
+                marginTop: '10px', padding: '12px 16px',
+                background: 'var(--accent-gold-light)', borderRadius: 'var(--radius-sm)',
+                borderLeft: '3px solid var(--accent-gold)',
+                fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6,
+              }}>
+                💡 {challenge.hint}
+              </div>
+            )}
+          </div>
+
+          {/* Topic input */}
+          <div style={{
+            background: 'var(--bg-card)', border: '1px solid var(--border)',
+            borderRadius: 'var(--radius-lg)', padding: '24px', marginBottom: '24px',
+            boxShadow: 'var(--shadow-card)',
+          }}>
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>
+              {challenge.topic_prompt}
+            </label>
+            <input
+              value={topic}
+              onChange={e => setTopic(e.target.value)}
+              placeholder="Your topic…"
+              style={{
+                width: '100%', padding: '10px 14px',
+                border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
+                fontSize: '14px', color: 'var(--text-primary)', background: '#fff',
+                outline: 'none', marginBottom: '10px',
+              }}
+            />
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              {challenge.topic_examples.map(ex => (
+                <button
+                  key={ex}
+                  onClick={() => setTopic(ex)}
+                  style={{
+                    padding: '5px 12px', borderRadius: 'var(--radius-full)',
+                    background: topic === ex ? 'var(--captech-blue)' : 'var(--bg-secondary)',
+                    color: topic === ex ? '#fff' : 'var(--text-secondary)',
+                    border: '1px solid var(--border)',
+                    fontSize: '12px', fontWeight: 500, cursor: 'pointer',
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  {ex}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Prompt Workbench */}
+          <div style={{
+            background: 'var(--bg-card)', border: '1px solid var(--border)',
+            borderRadius: 'var(--radius-lg)', padding: '24px', marginBottom: '24px',
+            boxShadow: 'var(--shadow-card)',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <label style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                Your Prompt
+              </label>
+              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                {promptText.length} / 8000
+              </span>
+            </div>
+            <textarea
+              value={promptText}
+              onChange={e => setPromptText(e.target.value)}
+              placeholder="Write your prompt here…"
+              rows={8}
+              style={{
+                width: '100%', padding: '14px',
+                border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
+                fontSize: '14px', color: 'var(--text-primary)', background: '#fff',
+                resize: 'vertical', lineHeight: 1.7, outline: 'none',
+                fontFamily: 'var(--font-mono)',
+              }}
+            />
+            {attemptCount > 0 && (
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '8px' }}>
+                Attempt {attemptCount + 1} · Best score: <strong style={{ color: scoreColor(bestScore, true) }}>{toDisplayScore(bestScore)}/10</strong>
+              </p>
+            )}
+            <div style={{ display: 'flex', gap: '12px', marginTop: '16px', justifyContent: 'flex-end' }}>
+              {result && (
+                <Button variant="secondary" onClick={() => { reset(); exec.reset() }}>
+                  Clear
+                </Button>
+              )}
+              <Button
+                onClick={handleSubmit}
+                loading={isLoading}
+                disabled={!promptText.trim() || isLoading}
+                size="lg"
+              >
+                {attemptCount === 0 ? 'Analyze Prompt' : 'Re-analyze'}
+              </Button>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Error */}
       {error && <div style={{ marginBottom: '24px' }}><ErrorBanner message={error} onDismiss={reset} /></div>}
@@ -417,6 +531,63 @@ export function ChallengeView() {
           )}
         </div>
       )}
+    </div>
+  )
+}
+
+function StepBlock({
+  number,
+  title,
+  subtitle,
+  locked = false,
+  children,
+}: {
+  number: number
+  title: string
+  subtitle?: string
+  locked?: boolean
+  children: React.ReactNode
+}) {
+  return (
+    <div style={{
+      display: 'flex', gap: '16px',
+      marginBottom: '24px',
+      opacity: locked ? 0.55 : 1,
+      transition: 'opacity 0.2s',
+    }}>
+      {/* Step number circle */}
+      <div style={{
+        flexShrink: 0,
+        width: '32px', height: '32px',
+        borderRadius: '50%',
+        background: locked ? 'var(--bg-secondary)' : 'var(--captech-blue)',
+        color: locked ? 'var(--text-muted)' : '#fff',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: '14px', fontWeight: 700,
+        border: locked ? '1px solid var(--border)' : 'none',
+        marginTop: '2px',
+      }}>
+        {number}
+      </div>
+      {/* Step body */}
+      <div style={{
+        flex: 1, minWidth: 0,
+        background: 'var(--bg-card)',
+        border: '1px solid var(--border)',
+        borderRadius: 'var(--radius-lg)',
+        padding: '20px 24px',
+        boxShadow: 'var(--shadow-card)',
+      }}>
+        <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: subtitle ? '2px' : '12px' }}>
+          {title}
+        </h3>
+        {subtitle && (
+          <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '14px', lineHeight: 1.5 }}>
+            {subtitle}
+          </p>
+        )}
+        {children}
+      </div>
     </div>
   )
 }
