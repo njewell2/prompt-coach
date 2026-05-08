@@ -1,5 +1,6 @@
 import { useState, FormEvent } from 'react'
 import { useAuth } from '@/hooks/useAuth'
+import { CapTechLogo } from '@/components/shared/CapTechLogo'
 
 export function LoginScreen() {
   const { login, loading, error } = useAuth()
@@ -21,15 +22,10 @@ export function LoginScreen() {
       justifyContent: 'center',
       padding: '24px',
     }}>
-      {/* Logo mark */}
+      {/* Logo */}
       <div style={{ marginBottom: '32px', textAlign: 'center' }}>
-        <svg width="40" height="40" viewBox="0 0 28 28" fill="none" style={{ display: 'block', margin: '0 auto 12px' }}>
-          <polygon points="14,2 26,24 2,24" fill="var(--captech-yellow)" />
-        </svg>
-        <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--captech-navy)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
-          CapTech
-        </div>
-        <div style={{ fontSize: '11px', color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase', marginTop: '2px' }}>
+        <CapTechLogo color="var(--captech-blue)" height={28} />
+        <div style={{ fontSize: '11px', color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase', marginTop: '10px' }}>
           Prompt Engineering Coach
         </div>
       </div>

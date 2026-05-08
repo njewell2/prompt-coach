@@ -8,6 +8,7 @@ import { ProgressDashboard } from '@/components/ProgressDashboard'
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary'
 import { LoginScreen } from '@/components/LoginScreen'
 import { useAuth } from '@/hooks/useAuth'
+import { CapTechLogo } from '@/components/shared/CapTechLogo'
 
 function Footer() {
   return (
@@ -23,9 +24,7 @@ function Footer() {
         flexWrap: 'wrap', gap: '12px',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <svg width="20" height="20" viewBox="0 0 28 28" fill="none">
-            <polygon points="14,2 26,24 2,24" fill="var(--captech-yellow)" />
-          </svg>
+          <CapTechLogo color="rgba(255,255,255,0.4)" height={16} />
           <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', letterSpacing: '0.04em' }}>
             © {new Date().getFullYear()} CapTech Ventures, Inc.
           </span>

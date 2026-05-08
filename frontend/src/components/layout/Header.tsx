@@ -1,6 +1,7 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useProgress } from '@/hooks/useProgress'
 import { useAuth, type AuthUser } from '@/hooks/useAuth'
+import { CapTechLogo } from '@/components/shared/CapTechLogo'
 
 export function Header({ user }: { user: AuthUser }) {
   const navigate = useNavigate()
@@ -41,17 +42,8 @@ export function Header({ user }: { user: AuthUser }) {
             background: 'none', border: 'none', cursor: 'pointer', padding: 0,
           }}
         >
-          {/* CapTech wordmark triangle + text */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0px' }}>
-            {/* Triangle mark */}
-            <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-              <polygon points="14,2 26,24 2,24" fill="var(--captech-yellow)" />
-            </svg>
-          </div>
+          <CapTechLogo color="#ffffff" height={22} />
           <div style={{ borderLeft: '1px solid rgba(255,255,255,0.25)', paddingLeft: '14px' }}>
-            <div style={{ fontSize: '13px', fontWeight: 700, color: '#fff', lineHeight: 1.1, letterSpacing: '0.02em' }}>
-              CAPTECH
-            </div>
             <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.6)', lineHeight: 1, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
               Prompt Engineering Coach
             </div>
