@@ -142,7 +142,7 @@ export function LoginScreen() {
       {/* Powered by */}
       <div style={{ marginTop: '32px', display: 'flex', alignItems: 'center', gap: '8px' }}>
         <span style={{ fontSize: '11px', color: 'var(--text-muted)', letterSpacing: '0.04em' }}>powered by</span>
-        <CapTechLogo color="var(--text-muted)" height={14} />
+        <CapTechLogo color="var(--captech-blue)" height={14} />
       </div>
     </div>
   )
