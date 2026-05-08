@@ -25,7 +25,7 @@ function Footer() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', letterSpacing: '0.04em' }}>powered by</span>
-          <CapTechLogo color="rgba(255,255,255,0.4)" height={13} />
+          <CapTechLogo color="var(--captech-blue)" height={13} />
         </div>
         <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.03em' }}>
           Let's do next together.
