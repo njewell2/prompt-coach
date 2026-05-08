@@ -34,20 +34,21 @@ export function Header({ user }: { user: AuthUser }) {
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         height: '60px',
       }}>
-        {/* CapTech Logo + app name */}
+        {/* App name + powered by */}
         <button
           onClick={() => navigate('/')}
           style={{
-            display: 'flex', alignItems: 'center', gap: '14px',
-            background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+            display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
+            background: 'none', border: 'none', cursor: 'pointer', padding: 0, gap: '3px',
           }}
         >
-          <CapTechLogo color="#ffffff" height={22} />
-          <div style={{ borderLeft: '1px solid rgba(255,255,255,0.25)', paddingLeft: '14px' }}>
-            <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.6)', lineHeight: 1, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-              Prompt Engineering Coach
-            </div>
-          </div>
+          <span style={{ fontSize: '16px', fontWeight: 700, color: '#fff', lineHeight: 1, letterSpacing: '0.01em' }}>
+            Prompt Coach
+          </span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.04em' }}>powered by</span>
+            <CapTechLogo color="rgba(255,255,255,0.45)" height={11} />
+          </span>
         </button>
 
         {/* Nav + user */}

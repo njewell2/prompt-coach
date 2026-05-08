@@ -22,12 +22,14 @@ export function LoginScreen() {
       justifyContent: 'center',
       padding: '24px',
     }}>
-      {/* Logo */}
+      {/* App title */}
       <div style={{ marginBottom: '32px', textAlign: 'center' }}>
-        <CapTechLogo color="var(--captech-blue)" height={28} />
-        <div style={{ fontSize: '11px', color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase', marginTop: '10px' }}>
-          Prompt Engineering Coach
-        </div>
+        <h1 style={{ fontSize: '28px', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 4px' }}>
+          Prompt Coach
+        </h1>
+        <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0 }}>
+          Prompt engineering training by CapTech
+        </p>
       </div>
 
       {/* Card */}

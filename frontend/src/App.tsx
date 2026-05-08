@@ -23,11 +23,9 @@ function Footer() {
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         flexWrap: 'wrap', gap: '12px',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <CapTechLogo color="rgba(255,255,255,0.4)" height={16} />
-          <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', letterSpacing: '0.04em' }}>
-            © {new Date().getFullYear()} CapTech Ventures, Inc.
-          </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', letterSpacing: '0.04em' }}>powered by</span>
+          <CapTechLogo color="rgba(255,255,255,0.4)" height={13} />
         </div>
         <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.03em' }}>
           Let's do next together.
