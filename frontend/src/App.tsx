@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { Header } from '@/components/layout/Header'
 import { LevelMap } from '@/components/LevelMap'
@@ -5,6 +6,8 @@ import { ChallengeView } from '@/components/ChallengeView'
 import { FreePractice } from '@/components/FreePractice'
 import { ProgressDashboard } from '@/components/ProgressDashboard'
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary'
+import { LoginScreen } from '@/components/LoginScreen'
+import { useAuth } from '@/hooks/useAuth'
 
 function Footer() {
   return (
@@ -36,22 +39,32 @@ function Footer() {
 }
 
 export default function App() {
+  const { user, revalidate } = useAuth()
+
+  useEffect(() => {
+    if (user) revalidate()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (!user) {
+    return <LoginScreen />
+  }
+
   return (
     <BrowserRouter>
       <ErrorBoundary>
-      <div style={{ minHeight: '100vh', background: 'var(--bg-secondary)', display: 'flex', flexDirection: 'column' }}>
-        <Header />
-        <main style={{ flex: 1 }}>
-          <Routes>
-            <Route path="/" element={<LevelMap />} />
-            <Route path="/challenge/:id" element={<ChallengeView />} />
-            <Route path="/practice" element={<FreePractice />} />
-            <Route path="/progress" element={<ProgressDashboard />} />
-            <Route path="*" element={<LevelMap />} />
-          </Routes>
-        </main>
-        <Footer />
-      </div>
+        <div style={{ minHeight: '100vh', background: 'var(--bg-secondary)', display: 'flex', flexDirection: 'column' }}>
+          <Header user={user} />
+          <main style={{ flex: 1 }}>
+            <Routes>
+              <Route path="/" element={<LevelMap />} />
+              <Route path="/challenge/:id" element={<ChallengeView />} />
+              <Route path="/practice" element={<FreePractice />} />
+              <Route path="/progress" element={<ProgressDashboard />} />
+              <Route path="*" element={<LevelMap />} />
+            </Routes>
+          </main>
+          <Footer />
+        </div>
       </ErrorBoundary>
     </BrowserRouter>
   )

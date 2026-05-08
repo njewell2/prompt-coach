@@ -2,9 +2,10 @@ import json
 import re
 import time
 import uuid
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, session
 from backend.common.llm import get_client, model_id
 from backend.prompts.evaluator_system import EVALUATOR_SYSTEM_PROMPT
+from backend.db import save_attempt
 
 analyze_bp = Blueprint("analyze", __name__)
 
@@ -66,6 +67,7 @@ def analyze():
     prompt = (body.get("prompt") or "").strip()
     context = (body.get("context") or "").strip() or None
     mode = body.get("mode", "training")
+    challenge_id = (body.get("challenge_id") or "practice").strip()
 
     if not prompt:
         return jsonify({"error": "prompt is required"}), 400
@@ -84,6 +86,9 @@ def analyze():
         return jsonify({"error": "Analysis failed", "detail": msg}), 500
 
     if mode == "practice":
+        user_id = session.get("user_id")
+        if user_id:
+            save_attempt(user_id, challenge_id, prompt, result, mode, None)
         return jsonify(result)
 
     # training mode: stash reveal data server-side
@@ -94,6 +99,11 @@ def analyze():
         "improved_overall_score": result.pop("improved_overall_score", None),
     }
     result["session_token"] = token
+
+    user_id = session.get("user_id")
+    if user_id:
+        save_attempt(user_id, challenge_id, prompt, result, mode, token)
+
     return jsonify(result)
 
 

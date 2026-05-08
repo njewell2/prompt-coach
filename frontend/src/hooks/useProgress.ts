@@ -1,26 +1,23 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import type { ChallengeProgress, ChallengeAttempt, DimensionScore } from '@/types'
 import { CHALLENGES } from '@/data/challenges'
 
-const STORAGE_KEY = 'prompt-coach-progress'
-
-function load(): Map<string, ChallengeProgress> {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return new Map()
-    const arr: ChallengeProgress[] = JSON.parse(raw)
-    return new Map(arr.map(p => [p.challengeId, p]))
-  } catch {
-    return new Map()
-  }
-}
-
-function save(map: Map<string, ChallengeProgress>) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify([...map.values()]))
-}
-
 export function useProgress() {
-  const [progress, setProgress] = useState<Map<string, ChallengeProgress>>(load)
+  const [progress, setProgress] = useState<Map<string, ChallengeProgress>>(new Map)
+  const [loaded, setLoaded] = useState(false)
+
+  // Load from server on mount
+  useEffect(() => {
+    fetch('/api/user/progress')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.challenges) {
+          setProgress(new Map(Object.entries(data.challenges) as [string, ChallengeProgress][]))
+        }
+        setLoaded(true)
+      })
+      .catch(() => setLoaded(true))
+  }, [])
 
   const isUnlocked = useCallback((challengeId: string): boolean => {
     const challenge = CHALLENGES.find(c => c.id === challengeId)
@@ -30,6 +27,7 @@ export function useProgress() {
     return (prev?.best_score ?? 0) >= 75
   }, [progress])
 
+  // Optimistic local update — DB write happens server-side in /api/analyze
   const addAttempt = useCallback((
     challengeId: string,
     prompt: string,
@@ -56,27 +54,29 @@ export function useProgress() {
       }
       const attempts = [...existing.attempts, attempt]
       const best = Math.max(existing.best_score, score)
-      const updated: ChallengeProgress = {
+      next.set(challengeId, {
         ...existing,
         attempts,
         best_score: best,
         passed: best >= 75,
         gold: best >= 90,
-      }
-      next.set(challengeId, updated)
-      save(next)
+      })
       return next
     })
   }, [])
 
   const markRevealed = useCallback((challengeId: string) => {
+    // Persist to server
+    fetch('/api/user/reveal', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ challenge_id: challengeId }),
+    }).catch(() => {})
+
     setProgress(prev => {
       const next = new Map(prev)
       const existing = next.get(challengeId)
-      if (existing) {
-        next.set(challengeId, { ...existing, revealed: true })
-        save(next)
-      }
+      if (existing) next.set(challengeId, { ...existing, revealed: true })
       return next
     })
   }, [])
@@ -91,7 +91,6 @@ export function useProgress() {
     return progress.get(challengeId)
   }, [progress])
 
-  // Dimension averages across all attempts (for radar chart)
   const dimensionAverages = useCallback((): Record<string, number> => {
     const totals: Record<string, number[]> = {}
     for (const p of progress.values()) {
@@ -120,12 +119,12 @@ export function useProgress() {
   }, [progress])
 
   const clearAll = useCallback(() => {
-    localStorage.removeItem(STORAGE_KEY)
     setProgress(new Map())
   }, [])
 
   return {
     progress,
+    loaded,
     isUnlocked,
     addAttempt,
     markRevealed,

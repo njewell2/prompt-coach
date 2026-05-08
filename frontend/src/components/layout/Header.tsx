@@ -1,10 +1,12 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useProgress } from '@/hooks/useProgress'
+import { useAuth, type AuthUser } from '@/hooks/useAuth'
 
-export function Header() {
+export function Header({ user }: { user: AuthUser }) {
   const navigate = useNavigate()
   const location = useLocation()
   const { stats } = useProgress()
+  const { logout } = useAuth()
   const appStats = stats()
 
   const navLinks = [
@@ -56,7 +58,7 @@ export function Header() {
           </div>
         </button>
 
-        {/* Nav */}
+        {/* Nav + user */}
         <nav style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
           {navLinks.map(link => (
             <button
@@ -100,6 +102,25 @@ export function Header() {
               )}
             </button>
           ))}
+
+          {/* User + logout */}
+          <div style={{ marginLeft: '12px', paddingLeft: '12px', borderLeft: '1px solid rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)', maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {user.username}
+            </span>
+            <button
+              onClick={logout}
+              title="Sign out"
+              style={{
+                background: 'none', border: '1px solid rgba(255,255,255,0.2)',
+                borderRadius: 'var(--radius-sm)', padding: '3px 8px',
+                fontSize: '11px', color: 'rgba(255,255,255,0.5)',
+                cursor: 'pointer',
+              }}
+            >
+              out
+            </button>
+          </div>
         </nav>
       </div>
     </header>
