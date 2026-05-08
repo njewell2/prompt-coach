@@ -1,0 +1,8 @@
+frontend/node_modules/
+frontend/src/
+*.db
+.venv/
+__pycache__/
+*.pyc
+start.sh
+.git/

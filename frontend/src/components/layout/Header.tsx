@@ -1,0 +1,107 @@
+import { useNavigate, useLocation } from 'react-router-dom'
+import { useProgress } from '@/hooks/useProgress'
+
+export function Header() {
+  const navigate = useNavigate()
+  const location = useLocation()
+  const { stats } = useProgress()
+  const appStats = stats()
+
+  const navLinks = [
+    { path: '/', label: 'Training' },
+    { path: '/practice', label: 'Practice' },
+    { path: '/progress', label: 'Progress' },
+  ]
+
+  function isActive(path: string) {
+    if (path === '/') return location.pathname === '/'
+    return location.pathname.startsWith(path)
+  }
+
+  return (
+    <header style={{
+      background: 'var(--captech-navy)',
+      borderBottom: 'none',
+      position: 'sticky', top: 0, zIndex: 100,
+      boxShadow: '0 2px 8px rgba(0,0,0,0.18)',
+    }}>
+      <div style={{
+        maxWidth: '900px', margin: '0 auto',
+        padding: '0 24px',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        height: '60px',
+      }}>
+        {/* CapTech Logo + app name */}
+        <button
+          onClick={() => navigate('/')}
+          style={{
+            display: 'flex', alignItems: 'center', gap: '14px',
+            background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+          }}
+        >
+          {/* CapTech wordmark triangle + text */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0px' }}>
+            {/* Triangle mark */}
+            <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+              <polygon points="14,2 26,24 2,24" fill="var(--captech-yellow)" />
+            </svg>
+          </div>
+          <div style={{ borderLeft: '1px solid rgba(255,255,255,0.25)', paddingLeft: '14px' }}>
+            <div style={{ fontSize: '13px', fontWeight: 700, color: '#fff', lineHeight: 1.1, letterSpacing: '0.02em' }}>
+              CAPTECH
+            </div>
+            <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.6)', lineHeight: 1, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+              Prompt Engineering Coach
+            </div>
+          </div>
+        </button>
+
+        {/* Nav */}
+        <nav style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+          {navLinks.map(link => (
+            <button
+              key={link.path}
+              onClick={() => navigate(link.path)}
+              style={{
+                background: isActive(link.path) ? 'rgba(255,255,255,0.12)' : 'none',
+                border: 'none',
+                borderRadius: 'var(--radius-md)',
+                padding: '6px 14px',
+                fontSize: '13px',
+                fontWeight: isActive(link.path) ? 700 : 400,
+                color: isActive(link.path) ? '#fff' : 'rgba(255,255,255,0.7)',
+                cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: '6px',
+                transition: 'background 0.15s, color 0.15s',
+                letterSpacing: '0.01em',
+              }}
+              onMouseEnter={e => {
+                if (!isActive(link.path)) {
+                  ;(e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.08)'
+                  ;(e.currentTarget as HTMLButtonElement).style.color = '#fff'
+                }
+              }}
+              onMouseLeave={e => {
+                if (!isActive(link.path)) {
+                  ;(e.currentTarget as HTMLButtonElement).style.background = 'none'
+                  ;(e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.7)'
+                }
+              }}
+            >
+              {link.label}
+              {link.path === '/progress' && appStats.gold > 0 && (
+                <span style={{
+                  fontSize: '10px', background: 'var(--captech-yellow)',
+                  color: 'var(--captech-navy)', fontWeight: 700,
+                  padding: '1px 5px', borderRadius: 'var(--radius-full)',
+                }}>
+                  {appStats.gold}★
+                </span>
+              )}
+            </button>
+          ))}
+        </nav>
+      </div>
+    </header>
+  )
+}

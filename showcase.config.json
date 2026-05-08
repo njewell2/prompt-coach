@@ -1,0 +1,11 @@
+{
+  "appName": "prompt-coach",
+  "displayName": "Prompt Engineering Coach",
+  "description": "AI-powered prompt engineering training tool with challenge-based learning, scoring, and guided improvement loops grounded in frontier lab research.",
+  "visibility": "unlisted",
+  "runtime": "python",
+  "version": "3.12",
+  "assetsDir": ".",
+  "startCommand": "PORT=8080 python backend/app.py",
+  "internalPort": 8080
+}
