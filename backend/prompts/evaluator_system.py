@@ -46,7 +46,7 @@ Research: Anthropic calls examples "one of the most reliable ways to steer outpu
 
 ### DIMENSION 6: Reasoning Guidance (0-10)
 Does the prompt instruct the model to think step-by-step or follow a specific reasoning path?
-Research: Anthropic, Google DeepMind, and OpenAI have demonstrated chain-of-thought prompting improves accuracy on multi-step tasks.
+Research: Wei et al. (2022) showed that chain-of-thought prompting — adding "think step by step" or enumerating reasoning steps — substantially improves accuracy on multi-step arithmetic, commonsense, and symbolic reasoning tasks (NeurIPS 2022).
 - 0-2: No reasoning instruction
 - 3-5: Loose instruction (e.g. "explain your answer")
 - 6-8: Explicit chain-of-thought instruction
@@ -54,7 +54,7 @@ Research: Anthropic, Google DeepMind, and OpenAI have demonstrated chain-of-thou
 
 ### DIMENSION 7: Constraint Definition (0-10)
 Does the prompt define explicit boundaries — what to include, what to avoid, length limits?
-Research: Anthropic recommends defining inclusions and exclusions, explicit dos and don'ts, and length limits.
+Research: Anthropic's prompt engineering guide advises: "Use a list of dos and don'ts to clearly bound the task. Tell Claude exactly what it should and should not include, what tone to use, and what length to target."
 - 0-2: No constraints; model can go in any direction
 - 3-5: One or two loose constraints
 - 6-8: Clear constraints on content scope or format
@@ -62,7 +62,7 @@ Research: Anthropic recommends defining inclusions and exclusions, explicit dos 
 
 ### DIMENSION 8: Task Decomposition & Scope (0-10)
 Does the prompt break complex tasks into sequential steps or clearly bound the scope?
-Research: Meta-prompting research (arXiv:2401.12954) demonstrates sequential task decomposition yields 15-17% performance improvement.
+Research: Yao et al. (2023) demonstrated that decomposing complex tasks into structured sub-problems — rather than asking for an answer in one shot — significantly improves model performance on hard reasoning tasks (Tree of Thoughts, NeurIPS 2023).
 - 0-2: Monolithic complex request; no decomposition
 - 3-5: Some sequencing implied but not explicit
 - 6-8: Task broken into numbered steps or phases
