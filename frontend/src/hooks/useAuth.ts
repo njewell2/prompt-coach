@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, createContext, useContext, type ReactNode, createElement } from 'react'
 
 export interface AuthUser {
   id: number
@@ -21,7 +21,18 @@ function saveUser(user: AuthUser) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(user))
 }
 
-export function useAuth() {
+interface AuthContextValue {
+  user: AuthUser | null
+  loading: boolean
+  error: string | null
+  login: (username: string, email: string) => Promise<boolean>
+  logout: () => Promise<void>
+  revalidate: () => Promise<void>
+}
+
+const AuthContext = createContext<AuthContextValue | null>(null)
+
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(loadUser)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -58,18 +69,31 @@ export function useAuth() {
   }, [])
 
   const revalidate = useCallback(async () => {
-    // Verify the server session is still alive; silent re-login if not
     try {
       const res = await fetch('/api/auth/me')
       if (!res.ok) {
-        // Session expired — clear local user so login screen shows
         localStorage.removeItem(STORAGE_KEY)
         setUser(null)
       }
     } catch {
-      // Network issue — keep local user, don't force logout
+      // Network issue — keep local user
     }
   }, [])
 
-  return { user, loading, error, login, logout, revalidate }
+  // Revalidate once on mount if we have a stored user
+  useEffect(() => {
+    if (loadUser()) revalidate()
+  }, [revalidate])
+
+  return createElement(
+    AuthContext.Provider,
+    { value: { user, loading, error, login, logout, revalidate } },
+    children,
+  )
+}
+
+export function useAuth(): AuthContextValue {
+  const ctx = useContext(AuthContext)
+  if (!ctx) throw new Error('useAuth must be used within <AuthProvider>')
+  return ctx
 }

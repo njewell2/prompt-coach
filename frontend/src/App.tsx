@@ -1,4 +1,3 @@
-import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { Header } from '@/components/layout/Header'
 import { LevelMap } from '@/components/LevelMap'
@@ -36,11 +35,7 @@ function Footer() {
 }
 
 export default function App() {
-  const { user, revalidate } = useAuth()
-
-  useEffect(() => {
-    if (user) revalidate()
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  const { user } = useAuth()
 
   if (!user) {
     return <LoginScreen />
