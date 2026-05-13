@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React from 'react'
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger'
 type Size = 'sm' | 'md' | 'lg'
@@ -11,40 +11,48 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   iconRight?: React.ReactNode
 }
 
-const baseStyles: Record<Variant, React.CSSProperties> = {
-  primary: {
-    background: 'var(--captech-blue)',
-    color: 'var(--surface)',
-    border: '1px solid var(--captech-blue)',
-  },
-  secondary: {
-    background: 'var(--surface)',
-    color: 'var(--captech-blue)',
-    border: '1px solid var(--border)',
-  },
-  ghost: {
-    background: 'transparent',
-    color: 'var(--captech-blue)',
-    border: '1px solid transparent',
-  },
-  danger: {
-    background: 'var(--score-low)',
-    color: 'var(--surface)',
-    border: '1px solid var(--score-low)',
-  },
-}
-
-const hoverStyles: Record<Variant, React.CSSProperties> = {
-  primary:   { background: 'var(--captech-navy)', borderColor: 'var(--captech-navy)' },
-  secondary: { borderColor: 'var(--captech-blue)' },
-  ghost:     { background: 'rgba(0, 93, 185, 0.08)' },
-  danger:    { background: 'var(--score-low-strong, #B5341F)', borderColor: 'var(--score-low-strong, #B5341F)' },
-}
-
 const sizes: Record<Size, React.CSSProperties> = {
   sm: { padding: '6px 12px', fontSize: 'var(--fs-small)', borderRadius: 'var(--radius-md)', minHeight: '32px' },
   md: { padding: '8px 16px', fontSize: 'var(--fs-body)',  borderRadius: 'var(--radius-md)', minHeight: '36px' },
   lg: { padding: '12px 22px', fontSize: 'var(--fs-h3)',   borderRadius: 'var(--radius-md)', minHeight: '44px' },
+}
+
+// Hover styles live in a stylesheet (vs. React state) so that navigation
+// or unmount during a click can never leave a button stuck in its hover
+// state — the browser drops :hover the moment the cursor leaves.
+const STYLES = `
+.pc-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-weight: var(--fw-semi);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+  white-space: nowrap;
+  line-height: 1;
+}
+.pc-btn:disabled { cursor: not-allowed; opacity: 0.6; }
+
+.pc-btn--primary   { background: var(--captech-blue); color: var(--surface); border: 1px solid var(--captech-blue); }
+.pc-btn--secondary { background: var(--surface); color: var(--captech-blue); border: 1px solid var(--border); }
+.pc-btn--ghost     { background: transparent; color: var(--captech-blue); border: 1px solid transparent; }
+.pc-btn--danger    { background: var(--score-low); color: var(--surface); border: 1px solid var(--score-low); }
+
+.pc-btn--primary:hover:not(:disabled)   { background: var(--captech-navy); border-color: var(--captech-navy); }
+.pc-btn--secondary:hover:not(:disabled) { border-color: var(--captech-blue); }
+.pc-btn--ghost:hover:not(:disabled)     { background: rgba(0, 93, 185, 0.08); }
+.pc-btn--danger:hover:not(:disabled)    { background: var(--score-low-strong, #B5341F); border-color: var(--score-low-strong, #B5341F); }
+`
+
+let stylesInjected = false
+function ensureStyles() {
+  if (stylesInjected || typeof document === 'undefined') return
+  const tag = document.createElement('style')
+  tag.dataset.pcButton = 'true'
+  tag.textContent = STYLES
+  document.head.appendChild(tag)
+  stylesInjected = true
 }
 
 export function Button({
@@ -55,30 +63,18 @@ export function Button({
   iconLeft,
   iconRight,
   children,
+  className,
   style,
   ...rest
 }: ButtonProps) {
-  const [hover, setHover] = useState(false)
-  const variantStyle = { ...baseStyles[variant], ...(hover && !disabled && !loading ? hoverStyles[variant] : {}) }
+  ensureStyles()
 
   return (
     <button
       disabled={disabled || loading}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
+      className={`pc-btn pc-btn--${variant}${className ? ` ${className}` : ''}`}
       style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: '6px',
-        fontWeight: 'var(--fw-semi)',
-        cursor: disabled || loading ? 'not-allowed' : 'pointer',
-        opacity: disabled || loading ? 0.6 : 1,
-        transition: 'all 0.15s ease',
-        whiteSpace: 'nowrap',
-        lineHeight: 1,
         ...sizes[size],
-        ...variantStyle,
         ...style,
       }}
       {...rest}

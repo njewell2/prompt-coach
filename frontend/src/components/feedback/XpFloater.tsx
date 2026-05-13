@@ -7,7 +7,9 @@ export interface XpFloat {
   amount: number
 }
 
-const FLOAT_MS = 1800
+const FLOAT_MS = 3500
+const STACK_GAP_PX = 56
+const STAGGER_MS = 220
 
 export function XpFloaters({ floats }: { floats: XpFloat[] }) {
   return (
@@ -20,24 +22,25 @@ export function XpFloaters({ floats }: { floats: XpFloat[] }) {
     }}>
       <style>{`
         @keyframes pc-xp-rise {
-          0%   { opacity: 0; transform: translate(-50%, 20px) scale(0.9); }
-          15%  { opacity: 1; transform: translate(-50%, 0) scale(1); }
-          100% { opacity: 0; transform: translate(-50%, -80px) scale(1.05); }
+          0%    { opacity: 0; transform: translate(-50%, 24px) scale(0.92); }
+          10%   { opacity: 1; transform: translate(-50%, 0) scale(1); }
+          82%   { opacity: 1; transform: translate(-50%, -16px) scale(1); }
+          100%  { opacity: 0; transform: translate(-50%, -56px) scale(1); }
         }
       `}</style>
       {floats.map((f, i) => (
-        <Floater key={f.id} float={f} delayMs={i * 140} />
+        <Floater key={f.id} float={f} index={i} />
       ))}
     </div>
   )
 }
 
-function Floater({ float, delayMs }: { float: XpFloat; delayMs: number }) {
+function Floater({ float, index }: { float: XpFloat; index: number }) {
   const [visible, setVisible] = useState(false)
   useEffect(() => {
-    const t = window.setTimeout(() => setVisible(true), delayMs)
+    const t = window.setTimeout(() => setVisible(true), index * STAGGER_MS)
     return () => window.clearTimeout(t)
-  }, [delayMs])
+  }, [index])
 
   if (!visible) return null
 
@@ -45,7 +48,7 @@ function Floater({ float, delayMs }: { float: XpFloat; delayMs: number }) {
     <div style={{
       position: 'absolute',
       left: '50%',
-      top: '18%',
+      top: `calc(15% + ${index * STACK_GAP_PX}px)`,
       transform: 'translateX(-50%)',
       padding: '10px 18px',
       background: 'var(--captech-yellow)',

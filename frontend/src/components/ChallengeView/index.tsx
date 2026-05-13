@@ -55,6 +55,11 @@ export function ChallengeView() {
   const statusRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const topRef = useRef<HTMLDivElement>(null)
   const scoreCardRef = useRef<HTMLDivElement>(null)
+  // Tracks the in-flight submission so streaming-driven effects below
+  // can fire choreography (XP, scroll) and expert reveal exactly once.
+  const submitRef = useRef<{ fullPrompt: string; skipImproved: boolean } | null>(null)
+  const choreographedRef = useRef(false)
+  const expertKickedRef = useRef(false)
 
   useEffect(() => {
     if (isLoading) {
@@ -76,6 +81,9 @@ export function ChallengeView() {
     setFloats([])
     setToastBadges([])
     setShowConfetti(false)
+    submitRef.current = null
+    choreographedRef.current = false
+    expertKickedRef.current = false
     reset()
     exec.reset()
     window.scrollTo({ top: 0, behavior: 'auto' })
@@ -152,61 +160,91 @@ export function ChallengeView() {
       ? `[Source material]\n${challenge.sample_content.body}\n\n[User prompt]\n${promptText}`
       : promptText
     const skipImproved = exec.hasExpertCache(challengeId)
-    const res = await analyze({
+    submitRef.current = { fullPrompt, skipImproved }
+    choreographedRef.current = false
+    expertKickedRef.current = false
+    await analyze({
       prompt: fullPrompt,
       challenge_id: challengeId,
       mode: 'training',
       skip_improved: skipImproved,
     })
-    if (res) {
-      progress.addAttempt(challengeId, fullPrompt, res.overall_score, res.dimensions, res.strengths, res.improvements, res.session_token)
-      progress.applyAttemptServerSide(res.xp_earned, res.xp_total, res.new_badges)
-
-      // Choreography: at most two motions on screen at any moment.
-      // 0ms      pass-banner appears in flow + XP floaters rise from the score card
-      // ~1500ms  XP floaters have settled, badge toast slides in (if any)
-      // ~2200ms  badge toast settled; confetti fires once on gold (≥85)
-      const isGold = (res.overall_score ?? 0) >= 85
-      const newBadges = Array.isArray(res.new_badges) ? res.new_badges : []
-      const xpEarned = Array.isArray(res.xp_earned) ? res.xp_earned : []
-
-      if (xpEarned.length > 0) {
-        setFloats(xpEarned.map((ev, i) => ({
-          id: `${Date.now()}-${i}`,
-          label: XP_REASON_LABELS[ev.reason] || ev.reason,
-          amount: ev.amount,
-        })))
-        window.setTimeout(() => setFloats([]), 2500)
-      }
-
-      if (newBadges.length > 0) {
-        const delay = xpEarned.length > 0 ? 1500 : 0
-        window.setTimeout(() => {
-          setToastBadges(prev => [...prev, ...newBadges])
-        }, delay)
-      }
-      if (isGold) {
-        const goldDelay = newBadges.length > 0 ? 2200 : (xpEarned.length > 0 ? 1500 : 0)
-        window.setTimeout(() => {
-          setShowConfetti(true)
-          window.setTimeout(() => setShowConfetti(false), 2200)
-        }, goldDelay)
-      }
-
-      scoreCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-
-      // Always kick off expert/user execution. When skipImproved is true the
-      // backend won't return a session_token — useExecute will hydrate the
-      // expert side from its in-memory cache and only stream the user side.
-      if (skipImproved) {
-        if (!prog?.revealed) progress.markRevealed(challengeId)
-        exec.revealAndExecuteBoth(null, fullPrompt, challengeId)
-      } else if (res.session_token) {
-        if (!prog?.revealed) progress.markRevealed(challengeId)
-        exec.revealAndExecuteBoth(res.session_token, fullPrompt, challengeId)
-      }
-    }
   }
+
+  // Fire XP floaters, badges, confetti, scroll, and persist the attempt as
+  // soon as scoring completes (overall_score + xp_earned arrive). The expert
+  // comparison can keep streaming below without holding any of this back.
+  useEffect(() => {
+    if (choreographedRef.current) return
+    if (!submitRef.current) return
+    const score = partial?.overall_score
+    const xp = partial?.xp_earned
+    if (score === undefined || xp === undefined) return
+    choreographedRef.current = true
+
+    const { fullPrompt } = submitRef.current
+    progress.addAttempt(
+      challengeId,
+      fullPrompt,
+      score,
+      partial?.dimensions ?? [],
+      partial?.strengths,
+      partial?.improvements,
+      partial?.session_token,
+    )
+    progress.applyAttemptServerSide(xp, partial?.xp_total, partial?.new_badges)
+
+    const isGold = score >= 85
+    const newBadges = Array.isArray(partial?.new_badges) ? partial!.new_badges! : []
+    const xpEarned = Array.isArray(xp) ? xp : []
+
+    if (xpEarned.length > 0) {
+      setFloats(xpEarned.map((ev, i) => ({
+        id: `${Date.now()}-${i}`,
+        label: XP_REASON_LABELS[ev.reason] || ev.reason,
+        amount: ev.amount,
+      })))
+      const totalMs = xpEarned.length * 220 + 3500 + 200
+      window.setTimeout(() => setFloats([]), totalMs)
+    }
+
+    if (newBadges.length > 0) {
+      const delay = xpEarned.length > 0 ? 1500 : 0
+      window.setTimeout(() => {
+        setToastBadges(prev => [...prev, ...newBadges])
+      }, delay)
+    }
+    if (isGold) {
+      const goldDelay = newBadges.length > 0 ? 2200 : (xpEarned.length > 0 ? 1500 : 0)
+      window.setTimeout(() => {
+        setShowConfetti(true)
+        window.setTimeout(() => setShowConfetti(false), 2200)
+      }, goldDelay)
+    }
+
+    scoreCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [partial?.overall_score, partial?.xp_earned])
+
+  // Kick off the expert/user execution stream once we have a session_token
+  // (skip_improved=false) or immediately when expert data is cached.
+  useEffect(() => {
+    if (expertKickedRef.current) return
+    if (!submitRef.current) return
+    const { fullPrompt, skipImproved } = submitRef.current
+    if (skipImproved) {
+      expertKickedRef.current = true
+      if (!prog?.revealed) progress.markRevealed(challengeId)
+      exec.revealAndExecuteBoth(null, fullPrompt, challengeId)
+      return
+    }
+    if (partial?.session_token) {
+      expertKickedRef.current = true
+      if (!prog?.revealed) progress.markRevealed(challengeId)
+      exec.revealAndExecuteBoth(partial.session_token, fullPrompt, challengeId)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [partial?.session_token])
 
   const attemptCount = prog?.attempts.length ?? 0
   const bestScore = prog?.best_score ?? 0
@@ -262,23 +300,29 @@ export function ChallengeView() {
         subtitle={challenge.sample_content?.label}
         collapsedOnMobile={promptText.length > 0}
       >
+        <hr style={{
+          border: 'none',
+          borderTop: '1px solid var(--border)',
+          margin: '4px 0 16px',
+        }} />
         <div style={{
-          background: 'var(--surface-quiet)', border: '1px solid var(--border)',
-          borderRadius: 'var(--radius-md)', padding: '16px 20px',
-          fontSize: 'var(--fs-small)', color: 'var(--ink)', lineHeight: 1.7,
+          fontSize: 'var(--fs-body)', color: 'var(--ink-2)', lineHeight: 1.7,
           whiteSpace: 'pre-wrap',
           fontFamily: 'var(--font-sans)',
         }}>
+          <strong style={{ color: 'var(--ink)', display: 'block', marginBottom: '8px' }}>Context:</strong>
           {challenge.sample_content?.body}
         </div>
         {challenge.sample_content?.goal && (
           <p style={{
-            marginTop: '12px',
-            fontSize: 'var(--fs-small)', color: 'var(--ink-2)',
-            display: 'flex', alignItems: 'center', gap: '8px',
+            marginTop: '20px',
+            paddingTop: '16px',
+            borderTop: '1px solid var(--border)',
+            fontSize: 'var(--fs-body)', color: 'var(--ink-2)', lineHeight: 1.7,
+            display: 'flex', alignItems: 'flex-start', gap: '8px',
           }}>
-            <span style={{ color: 'var(--captech-blue)', display: 'inline-flex' }}><Icon.Target size={15} /></span>
-            <span><strong>Goal:</strong> {challenge.sample_content.goal}</span>
+            <span style={{ color: 'var(--captech-blue)', display: 'inline-flex', marginTop: '4px' }}><Icon.Target size={16} /></span>
+            <span><strong style={{ color: 'var(--ink)' }}>Goal:</strong> {challenge.sample_content.goal}</span>
           </p>
         )}
       </StepBlock>
@@ -290,6 +334,7 @@ export function ChallengeView() {
         subtitle={challenge.structural_task}
       >
         <textarea
+          className="pc-prompt-input"
           value={promptText}
           onChange={e => setPromptText(e.target.value)}
           onKeyDown={e => {
@@ -298,13 +343,20 @@ export function ChallengeView() {
           rows={6}
           style={{
             width: '100%', padding: '14px',
-            border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
-            fontSize: '16px', color: 'var(--ink)', background: 'var(--surface)',
-            resize: 'vertical', lineHeight: 1.7, outline: 'none',
-            fontFamily: 'var(--font-mono)',
+            border: '1px solid transparent', borderRadius: 'var(--radius-md)',
+            fontSize: 'var(--fs-body)', color: 'var(--ink)', background: 'var(--surface-quiet)',
+            resize: 'vertical', lineHeight: 1.6, outline: 'none',
+            fontFamily: 'var(--font-sans)',
             boxSizing: 'border-box',
+            transition: 'border-color 0.15s, box-shadow 0.15s',
           }}
         />
+        <style>{`
+          .pc-prompt-input:focus {
+            border-color: var(--captech-blue);
+            box-shadow: 0 0 0 3px rgba(0, 93, 185, 0.12);
+          }
+        `}</style>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px', gap: '12px', flexWrap: 'wrap' }}>
           <span style={{ fontSize: 'var(--fs-micro)', color: 'var(--ink-4)' }}>
             Cmd+Enter to submit
@@ -416,34 +468,39 @@ export function ChallengeView() {
             </div>
           )}
 
-          {/* Sub-75 coach voice — never silent. Names the strongest area as a foothold,
-              and softens the message on attempt one (when red bars hit hardest). */}
-          {bestScore > 0 && bestScore < 75 && displayResult.dimensions.length > 0 && (() => {
-            const sorted = [...displayResult.dimensions].sort((a, b) => b.score - a.score)
-            const top = sorted[0]
-            const firstAttempt = attemptCount <= 1
-            return (
-              <div style={{
-                background: 'var(--score-mid-bg)',
-                border: '1px solid var(--score-mid)',
-                borderRadius: 'var(--radius-lg)', padding: '16px 24px',
-                display: 'flex', alignItems: 'center', gap: '12px',
-                marginBottom: '24px',
-              }}>
-                <span style={{ display: 'inline-flex', color: 'var(--score-mid)' }}>
-                  <Icon.Trend size={22} />
-                </span>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontWeight: 'var(--fw-bold)', fontSize: 'var(--fs-h3)', color: 'var(--ink)', letterSpacing: '-0.01em' }}>
-                    {firstAttempt ? "You're closer than the score looks." : 'Keep going.'}
-                  </p>
-                  <p style={{ fontSize: 'var(--fs-small)', color: 'var(--ink-2)' }}>
-                    Your strongest area was <strong style={{ color: 'var(--ink)' }}>{top.name}</strong>. Build the rest from there: re-score with the focus suggestions below.
-                  </p>
-                </div>
+          {/* Sub-75 coach voice — recommend pushing the score up, but always offer
+              the next challenge as an explicit out so the user isn't stuck. */}
+          {bestScore > 0 && bestScore < 75 && displayResult.dimensions.length > 0 && (
+            <div style={{
+              background: 'var(--score-mid-bg)',
+              border: '1px solid var(--score-mid)',
+              borderRadius: 'var(--radius-lg)', padding: '16px 24px',
+              display: 'flex', alignItems: 'center', gap: '12px',
+              marginBottom: '24px',
+            }}>
+              <span style={{ display: 'inline-flex', color: 'var(--score-mid)' }}>
+                <Icon.Trend size={22} />
+              </span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontWeight: 'var(--fw-bold)', fontSize: 'var(--fs-h3)', color: 'var(--ink)', letterSpacing: '-0.01em' }}>
+                  Aim for 75 or higher
+                </p>
+                <p style={{ fontSize: 'var(--fs-small)', color: 'var(--ink-2)' }}>
+                  We recommend getting your score to at least 75 before moving on, but you can continue to the next challenge if you'd like.
+                </p>
               </div>
-            )
-          })()}
+              {nextChallenge && (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => navigate(`/challenge/${nextChallenge.id}`)}
+                  iconRight={<Icon.ArrowRight size={14} />}
+                >
+                  Next Challenge
+                </Button>
+              )}
+            </div>
+          )}
           {displayResult.source === 'persisted' && bestScore < 75 && (
             <div style={{
               background: 'var(--surface-quiet)', border: '1px solid var(--border)',
@@ -671,6 +728,7 @@ function StepBlock({
         background: 'var(--surface)',
         border: '1px solid var(--border)',
         borderRadius: 'var(--radius-lg)',
+        boxShadow: 'var(--shadow-card)',
         padding: '20px 24px',
       }}>
         <h3 style={{ fontSize: 'var(--fs-h3)', fontWeight: 'var(--fw-bold)', color: 'var(--ink)', marginBottom: subtitle ? '2px' : '12px' }}>

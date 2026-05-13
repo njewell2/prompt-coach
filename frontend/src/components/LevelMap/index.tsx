@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CHALLENGES, challengeDisplayTitle } from '@/data/challenges'
 import { useProgress } from '@/hooks/useProgress'
@@ -8,55 +9,30 @@ import { Icon } from '@/components/shared/Icon'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { Eyebrow } from '@/components/shared/Eyebrow'
 
-type NodeState = 'gold' | 'passed' | 'next' | 'unlocked' | 'locked'
+type NodeKind = 'gold' | 'attempted' | 'idle'
 
 const NODE_COLOR = 'var(--captech-blue)'
 
-function nodeState(
-  unlocked: boolean,
-  bestScore: number,
-  attempted: boolean,
-  isNext: boolean,
-): NodeState {
-  if (!unlocked) return 'locked'
-  if (bestScore >= 85) return 'gold'
-  if (bestScore >= 75) return 'passed'
-  if (isNext) return 'next'
-  if (attempted) return 'next'
-  return 'unlocked'
-}
-
-function NodeCircle({ state }: { state: NodeState }) {
-  const size = state === 'next' ? 44 : 36
+function NodeCircle({ kind, number, isNext }: { kind: NodeKind; number: number; isNext: boolean }) {
+  const size = isNext ? 44 : 36
 
   const bg =
-    state === 'gold'    ? 'var(--captech-yellow)' :
-    state === 'passed'  ? NODE_COLOR :
-    state === 'next'    ? NODE_COLOR :
-    state === 'unlocked'? 'var(--surface)' :
-                          'var(--surface-quiet)'
+    kind === 'gold'      ? 'var(--captech-yellow)' :
+    kind === 'attempted' ? NODE_COLOR :
+                           'var(--surface)'
 
   const border =
-    state === 'gold'    ? '2px solid var(--captech-yellow)' :
-    state === 'passed'  ? `2px solid ${NODE_COLOR}` :
-    state === 'next'    ? `3px solid ${NODE_COLOR}` :
-                          '2px solid var(--border)'
+    kind === 'gold'      ? '2px solid var(--captech-yellow)' :
+    kind === 'attempted' ? `2px solid ${NODE_COLOR}` :
+                           '2px solid var(--border)'
 
-  const iconColor =
-    state === 'gold'    ? 'var(--captech-navy)' :
-    state === 'passed'  ? 'var(--surface)' :
-    state === 'next'    ? 'var(--surface)' :
-                          'var(--ink-4)'
+  const textColor =
+    kind === 'gold'      ? 'var(--captech-navy)' :
+    kind === 'attempted' ? 'var(--surface)' :
+                           'var(--ink-3)'
 
-  const boxShadow = state === 'next' ? `0 0 0 6px ${NODE_COLOR}22` : undefined
-
-  const iconSize = state === 'next' ? 20 : 16
-  const iconEl =
-    state === 'gold'   ? <Icon.Trophy size={iconSize} /> :
-    state === 'passed' ? <Icon.CheckCircle size={iconSize} /> :
-    state === 'next'   ? <Icon.Play size={iconSize} /> :
-    state === 'locked' ? <Icon.Lock size={iconSize} /> :
-                         <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--ink-4)' }} />
+  const boxShadow = isNext ? `0 0 0 6px ${NODE_COLOR}22` : undefined
+  const fontSize = isNext ? '17px' : '15px'
 
   return (
     <div style={{
@@ -66,11 +42,15 @@ function NodeCircle({ state }: { state: NodeState }) {
       border,
       boxShadow,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      color: iconColor,
+      color: textColor,
       flexShrink: 0,
       transition: 'box-shadow 0.2s',
+      fontSize,
+      fontWeight: 'var(--fw-bold)',
+      fontVariantNumeric: 'tabular-nums',
+      lineHeight: 1,
     }}>
-      {iconEl}
+      {number}
     </div>
   )
 }
@@ -98,6 +78,10 @@ export function LevelMap() {
   const navigate = useNavigate()
   const { isUnlocked, getProgress, stats } = useProgress()
   const { user } = useAuth()
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'auto' })
+  }, [])
 
   const appStats = stats()
   const nextChallenge = CHALLENGES.find(c => isUnlocked(c.id) && (getProgress(c.id)?.best_score ?? 0) < 75)
@@ -127,8 +111,8 @@ export function LevelMap() {
             onClick={() => navigate(`/challenge/${nextChallenge.id}`)}
             iconRight={<Icon.ArrowRight size={16} />}
           >
-            <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: '6px' }}>
-              <span>{appStats.totalAttempts > 0 ? 'Continue' : 'Start'} with Challenge</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ lineHeight: 1 }}>{appStats.totalAttempts > 0 ? 'Continue' : 'Start'} with Challenge</span>
               <span style={{ fontSize: '1.35em', fontWeight: 'var(--fw-bold)', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
                 {nextChallengeNumber}
               </span>
@@ -139,11 +123,10 @@ export function LevelMap() {
 
       {CHALLENGES.map((challenge: Challenge, idx: number) => {
         const prog = getProgress(challenge.id)
-        const unlocked = isUnlocked(challenge.id)
         const bestScore = prog?.best_score ?? 0
         const attempted = (prog?.attempts.length ?? 0) > 0
         const isNext = challenge.id === nextChallenge?.id
-        const state = nodeState(unlocked, bestScore, attempted, isNext)
+        const kind: NodeKind = bestScore >= 85 ? 'gold' : attempted ? 'attempted' : 'idle'
         const isLast = idx === CHALLENGES.length - 1
         const challengeNumber = idx + 1
 
@@ -163,7 +146,6 @@ export function LevelMap() {
                 border: '1px solid var(--border)',
                 boxShadow: 'var(--shadow-card)',
                 cursor: 'pointer',
-                opacity: state === 'locked' ? 0.45 : 1,
                 transition: 'background 0.15s, box-shadow 0.15s, transform 0.15s, border-color 0.15s',
               }}
               onMouseEnter={e => {
@@ -181,20 +163,17 @@ export function LevelMap() {
                 el.style.transform = 'translateY(0)'
               }}
             >
-              <NodeCircle state={state} />
+              <NodeCircle kind={kind} number={challengeNumber} isNext={isNext} />
 
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', flexWrap: 'wrap' }}>
-                  <Eyebrow color="var(--ink-4)" style={{ letterSpacing: '0.06em', fontVariantNumeric: 'tabular-nums' }}>
-                    {String(challengeNumber).padStart(2, '0')}
-                  </Eyebrow>
                   <span style={{
-                    fontSize: 'var(--fs-body)', fontWeight: state === 'next' ? 'var(--fw-bold)' : 'var(--fw-semi)',
-                    color: state === 'locked' ? 'var(--ink-4)' : 'var(--ink)',
+                    fontSize: 'var(--fs-body)', fontWeight: isNext ? 'var(--fw-bold)' : 'var(--fw-semi)',
+                    color: 'var(--ink)',
                   }}>
                     {challengeDisplayTitle(challenge)}
                   </span>
-                  {state === 'next' && (
+                  {isNext && (
                     <span style={{
                       fontSize: 'var(--fs-micro)', fontWeight: 'var(--fw-bold)',
                       color: 'var(--surface)', background: NODE_COLOR,
@@ -204,7 +183,7 @@ export function LevelMap() {
                       NEXT
                     </span>
                   )}
-                  {(state === 'passed' || state === 'gold') && bestScore > 0 && (
+                  {attempted && bestScore > 0 && (
                     <span style={{ fontSize: 'var(--fs-micro)', color: 'var(--ink-3)', fontWeight: 'var(--fw-semi)', fontVariantNumeric: 'tabular-nums' }}>
                       {(bestScore / 10).toFixed(1)}/10
                     </span>

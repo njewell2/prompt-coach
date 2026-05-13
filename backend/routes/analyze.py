@@ -76,13 +76,20 @@ def _prior_attempt_stats(user_id: int, challenge_id: str) -> tuple[int, int]:
     return int(row["n"]), int(row["best"])
 
 
-def _persist_and_score(
-    result: dict, prompt: str, challenge_id: str, mode: str, user_id: int | None
+def _persist_scoring(
+    result: dict,
+    prompt: str,
+    challenge_id: str,
+    mode: str,
+    user_id: int | None,
+    expect_improved: bool,
 ) -> dict:
-    """Run the post-analysis side effects and return the fields that
-    belong in the `finalize` SSE event. Mutates `result` only by popping
-    `improved_*` keys for training mode (they're stashed in
-    `_session_store` for `/api/reveal`).
+    """Save the attempt and compute XP from scoring data alone (no
+    improved-prompt dependency). When ``expect_improved`` is true, pre-
+    allocate a session_token so the client can request the expert reveal
+    once the improve worker finishes; the entry is filled in by
+    :func:`_stash_improved`. Returns the fields for the
+    ``scoring_complete`` SSE event.
     """
     extras: dict = {}
 
@@ -91,16 +98,11 @@ def _persist_and_score(
             save_attempt(user_id, challenge_id, prompt, result, mode, None)
         return extras
 
-    has_improved = "improved_prompt" in result
     token: str | None = None
-    if has_improved:
+    if expect_improved:
         token = str(uuid.uuid4())
-        _session_store[token] = {
-            "improved_prompt": result.pop("improved_prompt", ""),
-            "improved_dimensions": result.pop("improved_dimensions", []),
-            "improved_overall_score": result.pop("improved_overall_score", None),
-        }
-        result["session_token"] = token
+        # Reserve the slot now; the improve worker will fill it in.
+        _session_store[token] = None
         extras["session_token"] = token
 
     if user_id:
@@ -125,6 +127,16 @@ def _persist_and_score(
             extras["new_badges"] = sorted(badges_after - badges_before)
 
     return extras
+
+
+def _stash_improved(token: str | None, improve_data: dict) -> None:
+    if not token:
+        return
+    _session_store[token] = {
+        "improved_prompt": improve_data.get("improved_prompt", ""),
+        "improved_dimensions": improve_data.get("improved_dimensions", []),
+        "improved_overall_score": improve_data.get("improved_overall_score"),
+    }
 
 
 def _stream(
@@ -250,6 +262,7 @@ def _stream(
         if skip_improved
         else None
     )
+    scoring_extras: dict = {}
     failed: str | None = None
 
     try:
@@ -257,9 +270,28 @@ def _stream(
             kind, payload = q.get()
             if kind == "__scoring_done__":
                 scoring = payload
+                # Persist + score immediately on scoring completion so XP and
+                # badges can flow to the client while improve is still working.
+                scoring_data = scoring["data"]
+                scoring_data["dimensions"] = attach_citations(scoring_data.get("dimensions", []))
+                try:
+                    scoring_extras = _persist_scoring(
+                        scoring_data,
+                        prompt,
+                        challenge_id,
+                        mode,
+                        user_id,
+                        expect_improved=not skip_improved,
+                    )
+                except Exception as e:
+                    traceback.print_exc()
+                    failed = str(e)
+                    break
+                yield _sse("scoring_complete", scoring_extras)
                 continue
             if kind == "__improve_done__":
                 improve = payload
+                _stash_improved(scoring_extras.get("session_token"), improve["data"])
                 continue
             if kind.endswith("_failed__"):
                 failed = payload
@@ -272,24 +304,12 @@ def _stream(
         yield _sse("error", {"error": "Analysis failed", "detail": failed})
         return
 
-    result = {**scoring["data"], **improve["data"]}
-    result["dimensions"] = attach_citations(result.get("dimensions", []))
-    result["tokens"] = _sum_tokens(scoring["tokens"], improve["tokens"])
-    result["analysis_time_ms"] = max(scoring["elapsed_ms"], improve["elapsed_ms"])
-
-    try:
-        extras = _persist_and_score(result, prompt, challenge_id, mode, user_id)
-    except Exception as e:
-        traceback.print_exc()
-        yield _sse("error", {"error": "Analysis failed", "detail": str(e)})
-        return
-
+    tokens = _sum_tokens(scoring["tokens"], improve["tokens"])
     yield _sse(
         "finalize",
         {
-            "tokens": result["tokens"],
-            "analysis_time_ms": result["analysis_time_ms"],
-            **extras,
+            "tokens": tokens,
+            "analysis_time_ms": max(scoring["elapsed_ms"], improve["elapsed_ms"]),
         },
     )
     yield _sse("done", {})
@@ -321,7 +341,13 @@ def analyze():
 def reveal():
     body = request.get_json(force=True)
     token = body.get("session_token", "")
-    data = _session_store.get(token)
-    if not data:
+    if token not in _session_store:
         return jsonify({"error": "Invalid or expired session token"}), 404
-    return jsonify(data)
+    # Token slot may be reserved but not yet populated — improve worker
+    # races with the user clicking reveal. Poll briefly.
+    for _ in range(120):  # up to ~12s
+        data = _session_store.get(token)
+        if data:
+            return jsonify(data)
+        time.sleep(0.1)
+    return jsonify({"error": "Improved prompt not ready"}), 504

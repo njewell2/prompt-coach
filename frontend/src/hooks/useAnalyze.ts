@@ -58,6 +58,14 @@ function applyEvent(prev: PartialAnalyze, frame: SSEFrame): PartialAnalyze {
         strengths: (data.strengths as string[] | undefined) ?? prev.strengths,
         improvements: (data.improvements as string[] | undefined) ?? prev.improvements,
       }
+    case 'scoring_complete':
+      return {
+        ...prev,
+        session_token: data.session_token as string | undefined,
+        xp_earned: data.xp_earned as XpEvent[] | undefined,
+        xp_total: data.xp_total as number | undefined,
+        new_badges: data.new_badges as string[] | undefined,
+      }
     case 'improve':
       return {
         ...prev,
@@ -70,10 +78,6 @@ function applyEvent(prev: PartialAnalyze, frame: SSEFrame): PartialAnalyze {
         ...prev,
         tokens: data.tokens as TokenUsage | undefined,
         analysis_time_ms: data.analysis_time_ms as number | undefined,
-        session_token: data.session_token as string | undefined,
-        xp_earned: data.xp_earned as XpEvent[] | undefined,
-        xp_total: data.xp_total as number | undefined,
-        new_badges: data.new_badges as string[] | undefined,
       }
     default:
       return prev

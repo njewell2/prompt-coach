@@ -46,7 +46,7 @@ export function PageHeader({ title, subtitle, eyebrow, right, size = 'default' }
           <p style={{
             marginTop: '10px',
             fontSize: 'var(--fs-lead)',
-            color: 'var(--ink-3)',
+            color: 'var(--ink-2)',
             lineHeight: 1.5,
             maxWidth: '70ch',
             fontWeight: 'var(--fw-reg)',
