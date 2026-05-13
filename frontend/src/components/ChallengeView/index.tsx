@@ -6,6 +6,7 @@ import { useExecute, type StreamState } from '@/hooks/useExecute'
 import { useProgress } from '@/hooks/useProgress'
 import { Button } from '@/components/shared/Button'
 import { ErrorBanner } from '@/components/shared/ErrorBanner'
+import { Card } from '@/components/shared/Card'
 import { AnalysisLoadingState, ResponseCardShimmer, ScoreCardShimmer, Shimmer } from '@/components/shared/LoadingShimmer'
 import { ScoreDisplay } from '@/components/ScoreDisplay'
 import { DimensionCard } from '@/components/DimensionCard'
@@ -633,16 +634,16 @@ export function ChallengeView() {
                 />
 
                 {rail.length > 0 && (
-                  <div style={{ marginTop: '24px' }}>
+                  <Card padding={24} style={{ marginTop: '24px' }}>
                     <h3 style={{
                       fontSize: 'var(--fs-h3)',
                       fontWeight: 'var(--fw-bold)',
                       color: 'var(--ink)',
-                      marginBottom: '4px',
+                      marginBottom: '16px',
                     }}>
                       The other four areas
                     </h3>
-                    <div style={{ borderBottom: '1px solid var(--border)' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                       {rail.map((dim, i) => (
                         <DimensionCard
                           key={dim.id}
@@ -652,7 +653,7 @@ export function ChallengeView() {
                         />
                       ))}
                     </div>
-                  </div>
+                  </Card>
                 )}
 
                 {displayResult.streaming && allDims.length < 5 && (

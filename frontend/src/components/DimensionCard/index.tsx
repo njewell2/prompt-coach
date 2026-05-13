@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import type { DimensionScore } from '@/types'
+import { DIMENSION_META } from '@/data/challenges'
 import { scoreColor, deltaColor, formatDelta } from '@/utils/score'
 import { ResearchBadge } from '@/components/ResearchBadge'
 
@@ -295,55 +296,52 @@ function DimensionRow({
 
   const delta = previousScore !== undefined ? dimension.score - previousScore : undefined
   const color = scoreColor(dimension.score)
+  const meta = DIMENSION_META[dimension.id]
 
   return (
     <div
       className="fade-in-up"
-      style={{
-        display: 'grid',
-        gridTemplateColumns: 'minmax(120px, 28%) minmax(80px, 1fr) auto',
-        alignItems: 'center',
-        gap: '14px',
-        padding: '10px 0',
-        borderTop: '1px solid var(--border)',
-        animationDelay: `${animationDelay}ms`,
-      }}
+      style={{ animationDelay: `${animationDelay}ms` }}
     >
-      <span style={{
-        fontSize: 'var(--fs-small)',
-        fontWeight: 'var(--fw-semi)',
-        color: 'var(--ink)',
-        whiteSpace: 'nowrap',
-        overflow: 'hidden',
-        textOverflow: 'ellipsis',
-      }}>
-        {dimension.name}
-      </span>
-      <Bar refEl={barRef} color={color} height={6} />
-      <span style={{
-        display: 'inline-flex',
-        alignItems: 'baseline',
-        gap: '6px',
-        fontVariantNumeric: 'tabular-nums',
-      }}>
-        {delta !== undefined && delta !== 0 && (
-          <span style={{ fontSize: 'var(--fs-micro)', fontWeight: 'var(--fw-semi)', color: deltaColor(delta) }}>
-            {formatDelta(delta)}
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+          <span style={{ fontSize: 'var(--fs-small)', fontWeight: 'var(--fw-semi)', color: 'var(--ink)' }}>
+            {meta?.name ?? dimension.name}
           </span>
-        )}
+          {meta?.description && (
+            <span style={{
+              fontSize: 'var(--fs-micro)',
+              color: 'var(--ink-3)',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              minWidth: 0,
+            }}>
+              · {meta.description}
+            </span>
+          )}
+        </div>
         <span style={{
-          fontSize: 'var(--fs-small)',
-          fontWeight: 'var(--fw-bold)',
-          color,
-          minWidth: '36px',
-          textAlign: 'right',
+          display: 'inline-flex',
+          alignItems: 'baseline',
+          gap: '6px',
+          flexShrink: 0,
+          fontVariantNumeric: 'tabular-nums',
         }}>
-          {dimension.score.toFixed(1)}
-          <span style={{ fontSize: 'var(--fs-micro)', fontWeight: 'var(--fw-reg)', color: 'var(--ink-4)' }}>
-            /10
+          {delta !== undefined && delta !== 0 && (
+            <span style={{ fontSize: 'var(--fs-micro)', fontWeight: 'var(--fw-semi)', color: deltaColor(delta) }}>
+              {formatDelta(delta)}
+            </span>
+          )}
+          <span style={{ fontSize: 'var(--fs-small)', fontWeight: 'var(--fw-bold)', color }}>
+            {dimension.score.toFixed(1)}
+            <span style={{ fontSize: 'var(--fs-micro)', fontWeight: 'var(--fw-reg)', color: 'var(--ink-4)' }}>
+              /10
+            </span>
           </span>
         </span>
-      </span>
+      </div>
+      <Bar refEl={barRef} color={color} height={6} />
     </div>
   )
 }
