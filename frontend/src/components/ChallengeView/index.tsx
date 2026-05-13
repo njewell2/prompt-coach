@@ -2,20 +2,37 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import type { Challenge } from '@/types'
 import { useAnalyze } from '@/hooks/useAnalyze'
-import { useExecute } from '@/hooks/useExecute'
+import { useExecute, type StreamState } from '@/hooks/useExecute'
 import { useProgress } from '@/hooks/useProgress'
 import { Button } from '@/components/shared/Button'
 import { ErrorBanner } from '@/components/shared/ErrorBanner'
-import { AnalysisLoadingState } from '@/components/shared/LoadingShimmer'
+import { AnalysisLoadingState, ResponseCardShimmer, ScoreCardShimmer, Shimmer } from '@/components/shared/LoadingShimmer'
 import { ScoreDisplay } from '@/components/ScoreDisplay'
 import { DimensionCard } from '@/components/DimensionCard'
-import { TokenMeter } from '@/components/TokenMeter'
-import { scoreLabel, scoreColor, toDisplayScore } from '@/utils/score'
-import { CHALLENGE_MAP } from '@/data/challenges'
+import { MarkdownText } from '@/components/shared/MarkdownText'
+import { scoreLabel, scoreColor, toDisplayScore, deltaColor, formatDelta } from '@/utils/score'
+import { CHALLENGES, CHALLENGE_MAP, DIMENSION_META, challengeDisplayTitle } from '@/data/challenges'
+import { XpFloaters, type XpFloat } from '@/components/feedback/XpFloater'
+import { BadgeToasts } from '@/components/feedback/BadgeToast'
+import { Confetti } from '@/components/feedback/Confetti'
+import { NextChallengePill } from '@/components/feedback/NextChallengePill'
+import type { DimensionScore } from '@/types'
+import { PageHeader } from '@/components/shared/PageHeader'
+import { Icon } from '@/components/shared/Icon'
+
+const XP_REASON_LABELS: Record<string, string> = {
+  attempt: 'Submission',
+  pass: 'Passed',
+  gold: 'Gold',
+  first_try: 'First try',
+  improve: 'Improved',
+  perfect_dim: 'Perfect area',
+  reveal: 'Expert reveal',
+}
 
 const STATUS_MESSAGES = [
   'Reading your prompt…',
-  'Scoring 8 dimensions…',
+  'Scoring 5 areas…',
   'Generating expert rewrite…',
   'Finalising feedback…',
 ]
@@ -25,18 +42,19 @@ export function ChallengeView() {
   const progress = useProgress()
   const navigate = useNavigate()
   const challenge = CHALLENGE_MAP.get(challengeId)
-  const [topic, setTopic] = useState('')
   const [promptText, setPromptText] = useState('')
   const [statusIdx, setStatusIdx] = useState(0)
-  const [showHint, setShowHint] = useState(false)
-  const [revealRequested, setRevealRequested] = useState(false)
+  const [floats, setFloats] = useState<XpFloat[]>([])
+  const [toastBadges, setToastBadges] = useState<string[]>([])
+  const [showConfetti, setShowConfetti] = useState(false)
 
-  const { analyze, result, isLoading, error, reset } = useAnalyze()
+  const { analyze, partial, result, isLoading, isStreaming, error, reset } = useAnalyze()
   const exec = useExecute()
   const prog = progress.getProgress(challengeId)
 
   const statusRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const topRef = useRef<HTMLDivElement>(null)
+  const scoreCardRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (isLoading) {
@@ -50,379 +68,364 @@ export function ChallengeView() {
     return () => { if (statusRef.current) clearInterval(statusRef.current) }
   }, [isLoading])
 
+  // When the route changes to a different challenge, clear all per-challenge local
+  // state. The component instance is reused across challenge IDs, so without this
+  // the previous challenge's prompt, analysis, and expert comparison would leak through.
+  useEffect(() => {
+    setPromptText('')
+    setFloats([])
+    setToastBadges([])
+    setShowConfetti(false)
+    reset()
+    exec.reset()
+    window.scrollTo({ top: 0, behavior: 'auto' })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [challengeId])
+
   if (!challenge) return <div style={{ padding: '48px', textAlign: 'center', color: 'var(--text-muted)' }}>Challenge not found.</div>
 
   if (!progress.isUnlocked(challengeId)) {
     const prev = challenge.unlock_after ? CHALLENGE_MAP.get(challenge.unlock_after) : null
     return (
-      <div style={{ padding: '48px', textAlign: 'center' }}>
-        <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔒</div>
-        <h2 style={{ fontSize: '20px', color: 'var(--text-primary)', marginBottom: '8px' }}>Challenge Locked</h2>
-        <p style={{ color: 'var(--text-secondary)', marginBottom: '24px' }}>
+      <div style={{ padding: '48px 24px', textAlign: 'center' }}>
+        <div style={{ color: 'var(--ink-4)', display: 'inline-flex', marginBottom: '16px' }}>
+          <Icon.Lock size={42} />
+        </div>
+        <h2 style={{ fontSize: 'var(--fs-h1)', marginBottom: '8px' }}>Challenge Locked</h2>
+        <p style={{ color: 'var(--ink-3)', marginBottom: '24px' }}>
           Complete "{prev?.title ?? 'the previous challenge'}" with a score of 75+ to unlock this challenge.
         </p>
-        <Button variant="secondary" onClick={() => navigate('/')}>Back to Level Map</Button>
+        <Button variant="secondary" onClick={() => navigate('/')} iconLeft={<Icon.ArrowLeft size={15} />}>
+          Back to Level Map
+        </Button>
       </div>
     )
   }
 
   const lastAttempt = prog?.attempts[prog.attempts.length - 1]
-  const sessionToken = result?.session_token ?? lastAttempt?.session_token
-  const canReveal = progress.canReveal(challengeId) || (prog?.revealed ?? false)
-  const nextChallenge = challenge.unlock_after
-    ? Object.values(Object.fromEntries(CHALLENGE_MAP)).find((c: Challenge) => c.unlock_after === challengeId)
-    : null
+  const nextChallenge = Object.values(Object.fromEntries(CHALLENGE_MAP))
+    .find((c: Challenge) => c.unlock_after === challengeId)
+
+  const challengeIndex = CHALLENGES.findIndex(c => c.id === challenge.id)
+  const challengeNumber = challengeIndex >= 0 ? challengeIndex + 1 : challenge.order
+  const totalChallenges = CHALLENGES.length
+  const nextChallengeIndex = nextChallenge ? CHALLENGES.findIndex(c => c.id === nextChallenge.id) : -1
+  const nextChallengeNumber = nextChallengeIndex >= 0 ? nextChallengeIndex + 1 : 0
+
+  type DisplayResult = {
+    overall_score?: number
+    dimensions: DimensionScore[]
+    strengths?: string[]
+    improvements?: string[]
+    session_token?: string
+    source: 'fresh' | 'persisted'
+    streaming: boolean
+  }
+
+  const displayResult: DisplayResult | null = partial
+    ? {
+        overall_score: partial.overall_score,
+        dimensions: partial.dimensions,
+        strengths: partial.strengths,
+        improvements: partial.improvements,
+        session_token: partial.session_token,
+        source: 'fresh',
+        streaming: isStreaming,
+      }
+    : lastAttempt
+      ? {
+          overall_score: lastAttempt.score,
+          dimensions: lastAttempt.dimensions,
+          strengths: lastAttempt.strengths ?? [],
+          improvements: lastAttempt.improvements ?? [],
+          session_token: lastAttempt.session_token,
+          source: 'persisted',
+          streaming: false,
+        }
+      : null
+
+  // Best-effort: if showing a persisted result and the user previously revealed
+  // the expert prompt, try to re-fetch it. The session_store is in-memory, so a
+  // backend restart will 404 — useExecute swallows that and we just render
+  // without the expert comparison.
+  useEffect(() => {
+    if (
+      displayResult?.source === 'persisted' &&
+      prog?.revealed &&
+      lastAttempt?.session_token &&
+      !exec.revealData &&
+      !exec.isRevealing &&
+      exec.userExec.phase === 'idle' &&
+      exec.expertExec.phase === 'idle'
+    ) {
+      exec.revealAndExecuteBoth(lastAttempt.session_token, lastAttempt.prompt, challengeId)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [displayResult?.source, prog?.revealed, lastAttempt?.session_token])
 
   async function handleSubmit() {
     if (!promptText.trim() || !challenge) return
-    // For sample_content challenges, include the source material so the AI
-    // judges the prompt in context. For legacy challenges, fall back to topic.
     const fullPrompt = challenge.sample_content
       ? `[Source material]\n${challenge.sample_content.body}\n\n[User prompt]\n${promptText}`
-      : topic ? `[Topic: ${topic}]\n\n${promptText}` : promptText
-    const res = await analyze({ prompt: fullPrompt, challenge_id: challengeId, mode: 'training' })
+      : promptText
+    const skipImproved = exec.hasExpertCache(challengeId)
+    const res = await analyze({
+      prompt: fullPrompt,
+      challenge_id: challengeId,
+      mode: 'training',
+      skip_improved: skipImproved,
+    })
     if (res) {
-      progress.addAttempt(challengeId, fullPrompt, res.overall_score, res.dimensions, res.session_token)
-      topRef.current?.scrollIntoView({ behavior: 'smooth' })
-    }
-  }
+      progress.addAttempt(challengeId, fullPrompt, res.overall_score, res.dimensions, res.strengths, res.improvements, res.session_token)
+      progress.applyAttemptServerSide(res.xp_earned, res.xp_total, res.new_badges)
 
-  async function handleReveal() {
-    if (!sessionToken) return
-    setRevealRequested(true)
-    progress.markRevealed(challengeId)
-    await exec.revealAndExecute(sessionToken)
+      if (Array.isArray(res.xp_earned) && res.xp_earned.length > 0) {
+        setFloats(res.xp_earned.map((ev, i) => ({
+          id: `${Date.now()}-${i}`,
+          label: XP_REASON_LABELS[ev.reason] || ev.reason,
+          amount: ev.amount,
+        })))
+        window.setTimeout(() => setFloats([]), 2500)
+      }
+      if (Array.isArray(res.new_badges) && res.new_badges.length > 0) {
+        setToastBadges(prev => [...prev, ...(res.new_badges || [])])
+      }
+      if ((res.overall_score ?? 0) >= 90) {
+        setShowConfetti(true)
+        window.setTimeout(() => setShowConfetti(false), 2600)
+      }
+
+      scoreCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+
+      // Always kick off expert/user execution. When skipImproved is true the
+      // backend won't return a session_token — useExecute will hydrate the
+      // expert side from its in-memory cache and only stream the user side.
+      if (skipImproved) {
+        if (!prog?.revealed) progress.markRevealed(challengeId)
+        exec.revealAndExecuteBoth(null, fullPrompt, challengeId)
+      } else if (res.session_token) {
+        if (!prog?.revealed) progress.markRevealed(challengeId)
+        exec.revealAndExecuteBoth(res.session_token, fullPrompt, challengeId)
+      }
+    }
   }
 
   const attemptCount = prog?.attempts.length ?? 0
   const bestScore = prog?.best_score ?? 0
 
-  const hasSample = !!challenge.sample_content
-
   return (
-    <div ref={topRef} style={{ maxWidth: '900px', margin: '0 auto', padding: '48px 24px' }}>
-      {/* Challenge header (compact) */}
-      <div style={{ marginBottom: '28px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '6px' }}>
-          <TierBadge tier={challenge.tier} />
-          <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 500 }}>
-            Challenge {challenge.id.toUpperCase()}
+    <div ref={topRef} className="pc-challenge-page" style={{ maxWidth: '900px', margin: '0 auto', padding: '48px 24px' }}>
+      <style>{`
+        @media (max-width: 720px) {
+          .pc-challenge-page { padding: 24px 16px !important; }
+        }
+      `}</style>
+      <XpFloaters floats={floats} />
+      <BadgeToasts
+        badgeIds={toastBadges}
+        onDismiss={(id) => setToastBadges(prev => prev.filter(b => b !== id))}
+      />
+      <Confetti show={showConfetti} />
+      {!isLoading && bestScore >= 75 && nextChallenge && (
+        <NextChallengePill
+          key={`${challenge.id}-${attemptCount}`}
+          title={nextChallenge.title}
+          nextNumber={nextChallengeNumber}
+          totalChallenges={totalChallenges}
+          onClick={() => navigate(`/challenge/${nextChallenge.id}`)}
+        />
+      )}
+      <button
+        onClick={() => navigate('/')}
+        style={{
+          display: 'inline-flex', alignItems: 'center', gap: '6px',
+          background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+          fontSize: '13px', color: 'var(--accent-blue)', fontWeight: 600,
+          marginBottom: '14px',
+        }}
+      >
+        <Icon.ArrowLeft size={14} />
+        Back to Training Home
+      </button>
+      <PageHeader
+        size="compact"
+        eyebrow={<span>Challenge {challengeNumber} of {totalChallenges}</span>}
+        title={challengeDisplayTitle(challenge)}
+        subtitle={challenge.brief}
+      />
+
+      {/* STEP 1: Read the source material */}
+      <StepBlock number={1} title="Read this" subtitle={challenge.sample_content?.label}>
+        <div style={{
+          background: 'var(--bg-secondary)', border: '1px solid var(--border)',
+          borderRadius: 'var(--radius-md)', padding: '16px 20px',
+          fontSize: '13px', color: 'var(--text-primary)', lineHeight: 1.7,
+          whiteSpace: 'pre-wrap',
+          fontFamily: 'var(--font-sans)',
+        }}>
+          {challenge.sample_content?.body}
+        </div>
+        {challenge.sample_content?.goal && (
+          <p style={{
+            marginTop: '12px',
+            fontSize: 'var(--fs-small)', color: 'var(--ink-2)',
+            display: 'flex', alignItems: 'center', gap: '8px',
+          }}>
+            <span style={{ color: 'var(--captech-blue)', display: 'inline-flex' }}><Icon.Target size={15} /></span>
+            <span><strong>Goal:</strong> {challenge.sample_content.goal}</span>
+          </p>
+        )}
+      </StepBlock>
+
+      {/* STEP 2: Write your prompt */}
+      <StepBlock
+        number={2}
+        title="Write your prompt"
+        subtitle={challenge.structural_task}
+      >
+        <textarea
+          value={promptText}
+          onChange={e => setPromptText(e.target.value)}
+          placeholder='Example: "Summarize the meeting notes in 3 bullet points for my VP…"'
+          rows={6}
+          style={{
+            width: '100%', padding: '14px',
+            border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
+            fontSize: '14px', color: 'var(--text-primary)', background: '#fff',
+            resize: 'vertical', lineHeight: 1.7, outline: 'none',
+            fontFamily: 'var(--font-mono)',
+            boxSizing: 'border-box',
+          }}
+        />
+        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginTop: '8px' }}>
+          <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+            {promptText.length} / 8000
           </span>
         </div>
-        <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px' }}>
-          {challenge.title}
-        </h1>
-        <div style={{ width: '32px', height: '3px', background: 'var(--accent-gold)', marginBottom: '12px', borderRadius: 2 }} />
-        <p style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
-          {challenge.brief}
-        </p>
-      </div>
+        {attemptCount > 0 && (
+          <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '12px' }}>
+            Attempt {attemptCount + 1} · Best score: <strong style={{ color: scoreColor(bestScore, true) }}>{toDisplayScore(bestScore)}/10</strong>
+          </p>
+        )}
+      </StepBlock>
 
-      {hasSample ? (
-        <>
-          {/* STEP 1: Read the source material */}
-          <StepBlock number={1} title="Read this" subtitle={challenge.sample_content!.label}>
-            <div style={{
-              background: 'var(--bg-secondary)', border: '1px solid var(--border)',
-              borderRadius: 'var(--radius-md)', padding: '16px 20px',
-              fontSize: '13px', color: 'var(--text-primary)', lineHeight: 1.7,
-              whiteSpace: 'pre-wrap',
-              fontFamily: 'var(--font-sans)',
-            }}>
-              {challenge.sample_content!.body}
-            </div>
-            <p style={{
-              marginTop: '12px',
-              fontSize: '13px', color: 'var(--text-secondary)',
-              display: 'flex', alignItems: 'center', gap: '6px',
-            }}>
-              <span>🎯</span>
-              <span><strong>Goal:</strong> {challenge.sample_content!.goal}</span>
-            </p>
-          </StepBlock>
-
-          {/* STEP 2: Write your prompt */}
-          <StepBlock
-            number={2}
-            title="Write your prompt"
-            subtitle={challenge.structural_task}
-          >
-            <textarea
-              value={promptText}
-              onChange={e => setPromptText(e.target.value)}
-              placeholder="Example: &quot;Summarize the meeting notes in 3 bullet points for my VP…&quot;"
-              rows={6}
-              style={{
-                width: '100%', padding: '14px',
-                border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
-                fontSize: '14px', color: 'var(--text-primary)', background: '#fff',
-                resize: 'vertical', lineHeight: 1.7, outline: 'none',
-                fontFamily: 'var(--font-mono)',
-                boxSizing: 'border-box',
-              }}
-            />
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' }}>
-              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                {promptText.length} / 8000
-              </span>
-              <button
-                onClick={() => setShowHint(h => !h)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '12px', color: 'var(--accent-blue)', padding: 0 }}
-              >
-                {showHint ? 'Hide hint' : 'Need a hint?'}
-              </button>
-            </div>
-            {showHint && (
-              <div style={{
-                marginTop: '10px', padding: '12px 16px',
-                background: 'var(--accent-gold-light)', borderRadius: 'var(--radius-sm)',
-                borderLeft: '3px solid var(--accent-gold)',
-                fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6,
-              }}>
-                💡 {challenge.hint}
-              </div>
-            )}
-            {attemptCount > 0 && (
-              <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '12px' }}>
-                Attempt {attemptCount + 1} · Best score: <strong style={{ color: scoreColor(bestScore, true) }}>{toDisplayScore(bestScore)}/10</strong>
-              </p>
-            )}
-          </StepBlock>
-
-          {/* STEP 3: Submit */}
-          <StepBlock
-            number={3}
-            title="Score my prompt"
-            subtitle="We'll rate your prompt on the dimensions below and coach you on how to improve."
-            locked={!promptText.trim()}
-          >
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', marginBottom: '16px' }}>
-              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Scoring focus:</span>
-              {challenge.focus_dimensions.map(d => (
-                <span key={d} style={{
+      {/* STEP 3: Submit */}
+      <StepBlock
+        number={3}
+        title="Score my prompt"
+        subtitle="We'll rate your prompt on the five areas below and coach you on how to improve."
+        locked={!promptText.trim()}
+      >
+        {challenge.focus_dimensions.length > 0 && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', marginBottom: '16px' }}>
+            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Scoring focus:</span>
+            {challenge.focus_dimensions.map(aid => {
+              const meta = DIMENSION_META[aid]
+              return meta ? (
+                <span key={aid} style={{
                   fontSize: '11px', fontWeight: 600,
                   background: 'var(--captech-blue)', color: '#fff',
                   padding: '3px 10px', borderRadius: 'var(--radius-full)',
                 }}>
-                  {d.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                  {meta.name}
                 </span>
-              ))}
-            </div>
-            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-              {result && (
-                <Button variant="secondary" onClick={() => { reset(); exec.reset() }}>
-                  Clear
-                </Button>
-              )}
-              <Button
-                onClick={handleSubmit}
-                loading={isLoading}
-                disabled={!promptText.trim() || isLoading}
-                size="lg"
-              >
-                {attemptCount === 0 ? 'Score my prompt →' : 'Re-score →'}
-              </Button>
-            </div>
-          </StepBlock>
-        </>
-      ) : (
-        <>
-          {/* Legacy flow for challenges without sample content */}
-          <div style={{
-            background: 'var(--bg-card)', border: '1px solid var(--border)',
-            borderRadius: 'var(--radius-lg)', padding: '24px',
-            marginBottom: '24px', boxShadow: 'var(--shadow-card)',
-          }}>
-            <div style={{
-              padding: '16px 20px',
-              background: 'var(--bg-secondary)',
-              borderRadius: 'var(--radius-md)',
-              border: '1px solid var(--border)',
-              marginBottom: '16px',
-            }}>
-              <p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
-                Your Task
-              </p>
-              <p style={{ fontSize: '15px', color: 'var(--text-primary)', lineHeight: 1.6, margin: 0 }}>
-                {challenge.structural_task}
-              </p>
-            </div>
-
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
-              <span style={{ fontSize: '12px', color: 'var(--text-muted)', alignSelf: 'center' }}>Scoring focus:</span>
-              {challenge.focus_dimensions.map(d => (
-                <span key={d} style={{
-                  fontSize: '12px', fontWeight: 600,
-                  background: 'var(--captech-blue)', color: '#fff',
-                  padding: '3px 10px', borderRadius: 'var(--radius-full)',
-                }}>
-                  {d.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                </span>
-              ))}
-            </div>
-
-            <button
-              onClick={() => setShowHint(h => !h)}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', color: 'var(--accent-blue)', padding: 0 }}
-            >
-              {showHint ? '▲ Hide hint' : '▼ Show hint'}
-            </button>
-            {showHint && (
-              <div style={{
-                marginTop: '10px', padding: '12px 16px',
-                background: 'var(--accent-gold-light)', borderRadius: 'var(--radius-sm)',
-                borderLeft: '3px solid var(--accent-gold)',
-                fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6,
-              }}>
-                💡 {challenge.hint}
-              </div>
-            )}
+              ) : null
+            })}
           </div>
-
-          {/* Topic input */}
-          <div style={{
-            background: 'var(--bg-card)', border: '1px solid var(--border)',
-            borderRadius: 'var(--radius-lg)', padding: '24px', marginBottom: '24px',
-            boxShadow: 'var(--shadow-card)',
-          }}>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>
-              {challenge.topic_prompt}
-            </label>
-            <input
-              value={topic}
-              onChange={e => setTopic(e.target.value)}
-              placeholder="Your topic…"
-              style={{
-                width: '100%', padding: '10px 14px',
-                border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
-                fontSize: '14px', color: 'var(--text-primary)', background: '#fff',
-                outline: 'none', marginBottom: '10px',
-              }}
-            />
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-              {challenge.topic_examples.map(ex => (
-                <button
-                  key={ex}
-                  onClick={() => setTopic(ex)}
-                  style={{
-                    padding: '5px 12px', borderRadius: 'var(--radius-full)',
-                    background: topic === ex ? 'var(--captech-blue)' : 'var(--bg-secondary)',
-                    color: topic === ex ? '#fff' : 'var(--text-secondary)',
-                    border: '1px solid var(--border)',
-                    fontSize: '12px', fontWeight: 500, cursor: 'pointer',
-                    transition: 'all 0.15s',
-                  }}
-                >
-                  {ex}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Prompt Workbench */}
-          <div style={{
-            background: 'var(--bg-card)', border: '1px solid var(--border)',
-            borderRadius: 'var(--radius-lg)', padding: '24px', marginBottom: '24px',
-            boxShadow: 'var(--shadow-card)',
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-              <label style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>
-                Your Prompt
-              </label>
-              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                {promptText.length} / 8000
-              </span>
-            </div>
-            <textarea
-              value={promptText}
-              onChange={e => setPromptText(e.target.value)}
-              placeholder="Write your prompt here…"
-              rows={8}
-              style={{
-                width: '100%', padding: '14px',
-                border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
-                fontSize: '14px', color: 'var(--text-primary)', background: '#fff',
-                resize: 'vertical', lineHeight: 1.7, outline: 'none',
-                fontFamily: 'var(--font-mono)',
-              }}
-            />
-            {attemptCount > 0 && (
-              <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '8px' }}>
-                Attempt {attemptCount + 1} · Best score: <strong style={{ color: scoreColor(bestScore, true) }}>{toDisplayScore(bestScore)}/10</strong>
-              </p>
-            )}
-            <div style={{ display: 'flex', gap: '12px', marginTop: '16px', justifyContent: 'flex-end' }}>
-              {result && (
-                <Button variant="secondary" onClick={() => { reset(); exec.reset() }}>
-                  Clear
-                </Button>
-              )}
-              <Button
-                onClick={handleSubmit}
-                loading={isLoading}
-                disabled={!promptText.trim() || isLoading}
-                size="lg"
-              >
-                {attemptCount === 0 ? 'Analyze Prompt' : 'Re-analyze'}
-              </Button>
-            </div>
-          </div>
-        </>
-      )}
+        )}
+        <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+          {result && (
+            <Button variant="secondary" onClick={() => { reset(); exec.reset() }}>
+              Clear
+            </Button>
+          )}
+          <Button
+            onClick={handleSubmit}
+            loading={isLoading}
+            disabled={!promptText.trim() || isLoading}
+            size="lg"
+          >
+            {attemptCount === 0 ? 'Score my prompt →' : 'Re-score →'}
+          </Button>
+        </div>
+      </StepBlock>
 
       {/* Error */}
       {error && <div style={{ marginBottom: '24px' }}><ErrorBanner message={error} onDismiss={reset} /></div>}
 
-      {/* Loading state */}
-      {isLoading && <AnalysisLoadingState statusText={STATUS_MESSAGES[statusIdx]} />}
+      {/* Loading state — only before any data has arrived */}
+      {isLoading && (!displayResult || displayResult.dimensions.length === 0) && (
+        <AnalysisLoadingState statusText={STATUS_MESSAGES[statusIdx]} />
+      )}
 
       {/* Results */}
-      {result && !isLoading && (
+      {displayResult && (!isLoading || displayResult.dimensions.length > 0) && (
         <div className="fade-in-up">
-          {/* Pass / Gold banner */}
-          {result.overall_score >= 75 && (
+          {/* Pass / Gold banner — only on a fresh, fully-streamed result. */}
+          {displayResult.source === 'fresh' && !displayResult.streaming && (displayResult.overall_score ?? 0) >= 75 && (
             <div style={{
-              background: result.overall_score >= 90 ? 'var(--score-mid-bg)' : 'var(--score-high-bg)',
-              border: `1px solid ${result.overall_score >= 90 ? 'var(--score-mid)' : 'var(--score-high)'}`,
+              background: (displayResult.overall_score ?? 0) >= 90 ? 'var(--score-mid-bg)' : 'var(--score-high-bg)',
+              border: `1px solid ${(displayResult.overall_score ?? 0) >= 90 ? 'var(--score-mid)' : 'var(--score-high)'}`,
               borderRadius: 'var(--radius-lg)', padding: '16px 24px',
               display: 'flex', alignItems: 'center', gap: '12px',
               marginBottom: '24px',
             }}>
-              <span style={{ fontSize: '24px' }}>
-                {result.overall_score >= 90 ? '⭐' : '✅'}
+              <span style={{
+                display: 'inline-flex',
+                color: (displayResult.overall_score ?? 0) >= 90 ? 'var(--score-mid)' : 'var(--score-high)',
+              }}>
+                {(displayResult.overall_score ?? 0) >= 90 ? <Icon.Trophy size={26} /> : <Icon.CheckCircle size={26} />}
               </span>
               <div>
-                <p style={{ fontWeight: 700, fontSize: '15px', color: 'var(--text-primary)' }}>
-                  {result.overall_score >= 90 ? 'Gold Star!' : 'Challenge Passed!'}
+                <p style={{ fontWeight: 'var(--fw-bold)', fontSize: 'var(--fs-h3)', color: 'var(--ink)' }}>
+                  {(displayResult.overall_score ?? 0) >= 90 ? 'Gold Star!' : 'Challenge Passed!'}
                 </p>
-                <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-                  {result.overall_score >= 90
+                <p style={{ fontSize: 'var(--fs-small)', color: 'var(--ink-2)' }}>
+                  {(displayResult.overall_score ?? 0) >= 90
                     ? 'Exceptional prompt engineering. You nailed it.'
-                    : nextChallenge ? `"${nextChallenge.title}" is now unlocked.` : 'All challenges in this tier complete!'}
+                    : nextChallenge ? `"${nextChallenge.title}" is now unlocked.` : 'All challenges complete!'}
                 </p>
               </div>
-              {nextChallenge && result.overall_score < 90 && (
+              {nextChallenge && (displayResult.overall_score ?? 0) < 90 && (
                 <Button
                   variant="primary"
                   size="sm"
                   style={{ marginLeft: 'auto' }}
                   onClick={() => navigate(`/challenge/${nextChallenge.id}`)}
+                  iconRight={<Icon.ArrowRight size={14} />}
                 >
-                  Next Challenge →
+                  Next Challenge
                 </Button>
               )}
             </div>
           )}
 
+          {displayResult.source === 'persisted' && (
+            <div style={{
+              background: 'var(--bg-secondary)', border: '1px solid var(--border)',
+              borderRadius: 'var(--radius-lg)', padding: '12px 20px',
+              display: 'flex', alignItems: 'center', gap: '10px',
+              marginBottom: '24px',
+              fontSize: 'var(--fs-small)', color: 'var(--ink-3)',
+            }}>
+              <Icon.File size={16} />
+              <span>Your last attempt — score <strong style={{ color: scoreColor(displayResult.overall_score ?? 0, true) }}>{displayResult.overall_score ?? 0}/100</strong>. Submit again to refresh.</span>
+            </div>
+          )}
+
           {/* Score summary */}
-          <div style={{
+          <div ref={scoreCardRef} style={{
             background: 'var(--bg-card)', border: '1px solid var(--border)',
             borderRadius: 'var(--radius-lg)', padding: '32px',
             display: 'flex', alignItems: 'center', gap: '32px',
             flexWrap: 'wrap', marginBottom: '24px',
             boxShadow: 'var(--shadow-card)',
+            scrollMarginTop: '16px',
           }}>
-            <ScoreDisplay score={result.overall_score} />
+            {typeof displayResult.overall_score === 'number'
+              ? <ScoreDisplay score={displayResult.overall_score} />
+              : <Shimmer width={120} height={120} borderRadius="50%" />
+            }
             <div style={{ flex: 1, minWidth: '240px' }}>
               <h2 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '16px', color: 'var(--text-primary)' }}>
                 Score Analysis
@@ -430,103 +433,76 @@ export function ChallengeView() {
               <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', marginBottom: '16px' }}>
                 <div>
                   <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>Grade</p>
-                  <p style={{ fontSize: '15px', fontWeight: 700, color: scoreColor(result.overall_score, true) }}>
-                    {scoreLabel(result.overall_score, true)}
-                  </p>
+                  {typeof displayResult.overall_score === 'number' ? (
+                    <p style={{ fontSize: '15px', fontWeight: 700, color: scoreColor(displayResult.overall_score, true) }}>
+                      {scoreLabel(displayResult.overall_score, true)}
+                    </p>
+                  ) : (
+                    <Shimmer width={70} height={18} />
+                  )}
                 </div>
                 <div>
                   <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>Attempt</p>
-                  <p style={{ fontSize: '22px', fontWeight: 700, color: 'var(--text-primary)' }}>#{attemptCount}</p>
+                  <p style={{ fontSize: '22px', fontWeight: 700, color: 'var(--text-primary)' }}>#{attemptCount + (displayResult.source === 'fresh' && displayResult.streaming ? 1 : 0)}</p>
                 </div>
-                {lastAttempt && attemptCount > 1 && (
-                  <div>
-                    <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>vs last attempt</p>
-                    <p style={{ fontSize: '22px', fontWeight: 700, color: scoreColor(result.overall_score - lastAttempt.score + result.overall_score, true) }}>
-                      {result.overall_score > lastAttempt.score ? '+' : ''}{result.overall_score - lastAttempt.score}
-                    </p>
-                  </div>
-                )}
               </div>
 
-              {/* Strengths */}
-              <div style={{ marginBottom: '12px' }}>
-                <p style={{ fontSize: '12px', fontWeight: 700, color: 'var(--score-high)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
-                  ✓ What You Did Well
-                </p>
-                {result.strengths.map((s, i) => (
-                  <div key={i} style={{ display: 'flex', gap: '8px', marginBottom: '6px' }}>
-                    <span style={{ color: 'var(--score-high)', flexShrink: 0 }}>✓</span>
-                    <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{s}</p>
-                  </div>
-                ))}
-              </div>
+              {displayResult.strengths && displayResult.strengths.length > 0 && (
+                <div style={{ marginBottom: '12px' }}>
+                  <p style={{ fontSize: '12px', fontWeight: 700, color: 'var(--score-high)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
+                    ✓ What You Did Well
+                  </p>
+                  {displayResult.strengths.map((s, i) => (
+                    <div key={i} style={{ display: 'flex', gap: '8px', marginBottom: '6px' }}>
+                      <span style={{ color: 'var(--score-high)', flexShrink: 0 }}>✓</span>
+                      <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{s}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
 
-              {/* Improvements */}
-              <div>
-                <p style={{ fontSize: '12px', fontWeight: 700, color: 'var(--accent-blue)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
-                  ↑ Top Improvements
-                </p>
-                {result.improvements.map((imp, i) => (
-                  <div key={i} style={{ display: 'flex', gap: '8px', marginBottom: '6px' }}>
-                    <span style={{ color: 'var(--accent-blue)', flexShrink: 0, fontWeight: 700 }}>{i + 1}.</span>
-                    <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{imp}</p>
-                  </div>
-                ))}
-              </div>
+              {displayResult.improvements && displayResult.improvements.length > 0 && (
+                <div>
+                  <p style={{ fontSize: '12px', fontWeight: 700, color: 'var(--accent-blue)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
+                    ↑ Top Improvements
+                  </p>
+                  {displayResult.improvements.map((imp, i) => (
+                    <div key={i} style={{ display: 'flex', gap: '8px', marginBottom: '6px' }}>
+                      <span style={{ color: 'var(--accent-blue)', flexShrink: 0, fontWeight: 700 }}>{i + 1}.</span>
+                      <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{imp}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Token meter */}
-          <div style={{ marginBottom: '24px' }}>
-            <TokenMeter tokens={result.tokens} analysisMs={result.analysis_time_ms} />
-          </div>
-
-          {/* Dimension breakdown */}
+          {/* Five area breakdown */}
           <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '16px' }}>
-            Dimension Breakdown
+            Your Five Areas
           </h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))', gap: '16px', marginBottom: '32px' }}>
-            {result.dimensions.map((dim, i) => {
-              const prevDim = lastAttempt?.dimensions.find(d => d.id === dim.id)
-              return (
-                <DimensionCard
-                  key={dim.id}
-                  dimension={dim}
-                  previousScore={prevDim?.score}
-                  isFocused={challenge.focus_dimensions.includes(dim.id)}
-                  animationDelay={i * 60}
-                />
-              )
-            })}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(320px, 100%), 1fr))', gap: '16px', marginBottom: '32px' }}>
+            {displayResult.dimensions.map((dim, i) => (
+              <DimensionCard
+                key={dim.id}
+                dimension={dim}
+                isFocused={challenge.focus_dimensions.includes(dim.id)}
+                animationDelay={i * 60}
+              />
+            ))}
+            {displayResult.streaming && Array.from({ length: Math.max(0, 5 - displayResult.dimensions.length) }).map((_, i) => (
+              <ScoreCardShimmer key={`shim-${i}`} />
+            ))}
           </div>
 
-          {/* Reveal gate */}
-          {!prog?.revealed && canReveal && !revealRequested && (
-            <div style={{
-              background: 'var(--bg-secondary)', border: '1px solid var(--border)',
-              borderRadius: 'var(--radius-lg)', padding: '32px', textAlign: 'center',
-              marginBottom: '24px',
-            }}>
-              <p style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '8px' }}>
-                Ready to see the expert version?
-              </p>
-              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '20px' }}>
-                Reveal the AI-optimized prompt and see it run side-by-side with yours.
-              </p>
-              <Button onClick={handleReveal} loading={exec.isRevealing || exec.isExecuting} size="lg">
-                Reveal Expert Version →
-              </Button>
-            </div>
-          )}
-
-          {/* Expert comparison */}
-          {(exec.revealData || prog?.revealed) && (exec.revealData) && (
+          {/* Expert comparison — render header + shimmers as soon as a submit is in flight,
+              fill in each section as data arrives. */}
+          {(displayResult.source === 'fresh' || (displayResult.source === 'persisted' && prog?.revealed)) && (
             <ExpertComparison
-              userDimensions={result.dimensions}
-              userScore={result.overall_score}
+              userScore={displayResult.overall_score ?? 0}
               revealData={exec.revealData}
-              execution={exec.execution}
-              isExecuting={exec.isExecuting}
+              userExec={exec.userExec}
+              expertExec={exec.expertExec}
             />
           )}
         </div>
@@ -555,7 +531,6 @@ function StepBlock({
       opacity: locked ? 0.55 : 1,
       transition: 'opacity 0.2s',
     }}>
-      {/* Step number circle */}
       <div style={{
         flexShrink: 0,
         width: '32px', height: '32px',
@@ -569,7 +544,6 @@ function StepBlock({
       }}>
         {number}
       </div>
-      {/* Step body */}
       <div style={{
         flex: 1, minWidth: 0,
         background: 'var(--bg-card)',
@@ -592,71 +566,60 @@ function StepBlock({
   )
 }
 
-function TierBadge({ tier }: { tier: string }) {
-  const colors: Record<string, string> = {
-    beginner: 'var(--tier-beginner)',
-    intermediate: 'var(--tier-intermediate)',
-    advanced: 'var(--tier-advanced)',
-  }
-  const bgs: Record<string, string> = {
-    beginner: 'var(--tier-beginner-bg)',
-    intermediate: 'var(--tier-intermediate-bg)',
-    advanced: 'var(--tier-advanced-bg)',
-  }
-  return (
-    <span style={{
-      fontSize: '11px', fontWeight: 700,
-      color: colors[tier], background: bgs[tier],
-      padding: '3px 10px', borderRadius: 'var(--radius-full)',
-      textTransform: 'capitalize',
-    }}>
-      {tier}
-    </span>
-  )
-}
-
 function ExpertComparison({
-  userDimensions,
   userScore,
   revealData,
-  execution,
-  isExecuting,
+  userExec,
+  expertExec,
 }: {
-  userDimensions: ReturnType<typeof useAnalyze>['result'] extends null ? never : NonNullable<ReturnType<typeof useAnalyze>['result']>['dimensions']
   userScore: number
-  revealData: NonNullable<ReturnType<typeof useExecute>['revealData']>
-  execution: ReturnType<typeof useExecute>['execution']
-  isExecuting: boolean
+  revealData: ReturnType<typeof useExecute>['revealData']
+  userExec: StreamState
+  expertExec: StreamState
 }) {
   const [copied, setCopied] = useState(false)
 
   function handleCopy() {
+    if (!revealData) return
     navigator.clipboard.writeText(revealData.improved_prompt)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
 
+  const userDisplay = toDisplayScore(userScore)
+  const expertDisplay = revealData ? toDisplayScore(revealData.improved_overall_score) : null
+  const delta = expertDisplay != null ? expertDisplay - userDisplay : 0
+
   return (
     <div className="fade-in-up" style={{ marginBottom: '32px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px', flexWrap: 'wrap' }}>
         <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)' }}>
           Expert Comparison
         </h3>
-        <div style={{ display: 'flex', gap: '16px', fontSize: '14px' }}>
+        <div style={{ display: 'flex', gap: '16px', fontSize: '14px', flexWrap: 'wrap', alignItems: 'center' }}>
           <span style={{ color: 'var(--text-secondary)' }}>
-            Your best: <strong style={{ color: scoreColor(userScore, true) }}>{toDisplayScore(userScore)}/10</strong>
+            Your best: <strong style={{ color: scoreColor(userScore, true) }}>{userDisplay}/10</strong>
           </span>
           <span>→</span>
-          <span style={{ color: 'var(--text-secondary)' }}>
-            Expert: <strong style={{ color: scoreColor(revealData.improved_overall_score, true) }}>{toDisplayScore(revealData.improved_overall_score)}/10</strong>
-          </span>
-          <span style={{ color: 'var(--score-high)', fontWeight: 700 }}>
-            +{toDisplayScore(revealData.improved_overall_score) - toDisplayScore(userScore)} ↑
-          </span>
+          {revealData ? (
+            <>
+              <span style={{ color: 'var(--text-secondary)' }}>
+                Expert: <strong style={{ color: scoreColor(revealData.improved_overall_score, true) }}>{expertDisplay}/10</strong>
+              </span>
+              {delta !== 0 && (
+                <span style={{ color: deltaColor(delta), fontWeight: 700 }}>
+                  {formatDelta(delta)}
+                </span>
+              )}
+            </>
+          ) : (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)' }}>
+              Expert: <Shimmer width={48} height={16} />
+            </span>
+          )}
         </div>
       </div>
 
-      {/* Expert prompt */}
       <div style={{
         background: 'var(--bg-card)', border: '1px solid var(--border)',
         borderRadius: 'var(--radius-lg)', padding: '24px', marginBottom: '24px',
@@ -664,70 +627,68 @@ function ExpertComparison({
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
           <h4 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)' }}>Expert Prompt</h4>
-          <Button variant="secondary" size="sm" onClick={handleCopy}>
+          <Button variant="secondary" size="sm" onClick={handleCopy} disabled={!revealData}>
             {copied ? '✓ Copied' : 'Copy'}
           </Button>
         </div>
-        <pre style={{
-          background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)',
-          padding: '16px', fontFamily: 'var(--font-mono)', fontSize: '13px',
-          color: 'var(--text-primary)', lineHeight: 1.7,
-          whiteSpace: 'pre-wrap', wordBreak: 'break-word',
-          margin: 0, maxHeight: '400px', overflowY: 'auto',
-        }}>
-          {revealData.improved_prompt}
-        </pre>
-      </div>
-
-      {/* AI response to expert prompt */}
-      <div style={{
-        background: 'var(--bg-card)', border: '1px solid var(--border)',
-        borderRadius: 'var(--radius-lg)', padding: '24px', marginBottom: '24px',
-        boxShadow: 'var(--shadow-card)',
-      }}>
-        <h4 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '12px' }}>
-          AI Response to Expert Prompt
-        </h4>
-        {isExecuting ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: 'var(--text-muted)', fontSize: '14px' }}>
-            <span style={{
-              width: '16px', height: '16px', borderRadius: '50%',
-              border: '2px solid var(--captech-blue)', borderTopColor: 'transparent',
-              animation: 'spin 0.7s linear infinite', display: 'inline-block',
-              flexShrink: 0,
-            }} />
-            Running optimized prompt…
-          </div>
-        ) : execution ? (
-          <div style={{
-            fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.8,
-            maxHeight: '500px', overflowY: 'auto',
-            whiteSpace: 'pre-wrap',
+        {revealData ? (
+          <pre style={{
+            background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)',
+            padding: '16px', fontFamily: 'var(--font-mono)', fontSize: '13px',
+            color: 'var(--text-primary)', lineHeight: 1.7,
+            whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+            margin: 0, maxHeight: '400px', overflowY: 'auto',
           }}>
-            {execution.response}
+            {revealData.improved_prompt}
+          </pre>
+        ) : (
+          <div style={{
+            background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)',
+            padding: '16px',
+            display: 'flex', flexDirection: 'column', gap: '10px',
+          }}>
+            <Shimmer width="95%" height={12} />
+            <Shimmer width="100%" height={12} />
+            <Shimmer width="88%" height={12} />
+            <Shimmer width="72%" height={12} />
           </div>
-        ) : null}
+        )}
       </div>
 
-      {/* Comparison dimension bars */}
-      <h4 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '16px' }}>
-        Dimension Comparison
-      </h4>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))', gap: '16px' }}>
-        {userDimensions.map((dim, i) => {
-          const improvDim = revealData.improved_dimensions.find(d => d.id === dim.id)
-          return (
-            <DimensionCard
-              key={dim.id}
-              dimension={dim}
-              improvedScore={improvDim?.score}
-              showComparison={true}
-              animationDelay={i * 60}
-            />
-          )
-        })}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(min(380px, 100%), 1fr))',
+        gap: '16px',
+      }}>
+        <ResponseCard title="AI Response to Your Prompt" stream={userExec} />
+        <ResponseCard title="AI Response to Expert Prompt" stream={expertExec} placeholder={!revealData} />
       </div>
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  )
+}
+
+function ResponseCard({ title, stream, placeholder = false }: { title: string; stream: StreamState; placeholder?: boolean }) {
+  // Awaiting kickoff: either we haven't yet started this stream (idle + nothing typed)
+  // or the prerequisite reveal hasn't landed yet (placeholder=true).
+  const awaiting = placeholder || (stream.phase === 'idle' && !stream.text) || (stream.phase === 'streaming' && !stream.text)
+  if (awaiting) {
+    return <ResponseCardShimmer title={title} />
+  }
+  return (
+    <div style={{
+      background: 'var(--bg-card)', border: '1px solid var(--border)',
+      borderRadius: 'var(--radius-lg)', padding: '24px',
+      boxShadow: 'var(--shadow-card)',
+      display: 'flex', flexDirection: 'column',
+    }}>
+      <h4 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '12px' }}>
+        {title}
+      </h4>
+      {stream.phase === 'error' ? (
+        <ErrorBanner message={stream.error ?? 'Execution failed'} />
+      ) : stream.text ? (
+        <MarkdownText text={stream.text} maxHeight={500} />
+      ) : null}
     </div>
   )
 }

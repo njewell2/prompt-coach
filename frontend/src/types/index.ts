@@ -23,6 +23,14 @@ export interface AnalyzeRequest {
   context?: string
   challenge_id?: string
   mode: 'training' | 'practice'
+  skip_improved?: boolean
+}
+
+export interface XpEvent {
+  reason: 'attempt' | 'pass' | 'gold' | 'first_try' | 'improve' | 'perfect_dim' | 'reveal'
+  amount: number
+  metadata?: { challenge_id?: string; dim_id?: string; delta?: number } | null
+  timestamp?: number
 }
 
 export interface AnalyzeResponse {
@@ -36,6 +44,9 @@ export interface AnalyzeResponse {
   improved_overall_score?: number
   tokens: TokenUsage
   analysis_time_ms: number
+  xp_earned?: XpEvent[]          // training mode only, authenticated
+  xp_total?: number
+  new_badges?: string[]
 }
 
 export interface RevealResponse {
@@ -55,6 +66,8 @@ export interface ChallengeAttempt {
   prompt: string
   score: number
   dimensions: DimensionScore[]
+  strengths?: string[]
+  improvements?: string[]
   session_token?: string
 }
 
@@ -77,6 +90,62 @@ export interface HistoryEntry {
 }
 
 export type ScoreGrade = 'A+' | 'A' | 'B' | 'C' | 'D' | 'F'
+
+export interface Badge {
+  earned: boolean
+  label: string
+  description: string
+  progress: { current: number; target: number }
+}
+
+export interface UserProgressResponse {
+  challenges: Record<string, ChallengeProgress>
+  xp_total: number
+  xp_events: XpEvent[]
+  badges: Record<string, Badge>
+  rank: { position: number | null; total: number }
+}
+
+export interface LeaderboardRow {
+  username: string
+  xp: number
+  challenges_passed: number
+  rank?: number
+  is_you?: boolean
+}
+
+export interface LeaderboardMeResponse {
+  top: LeaderboardRow[]
+  above: LeaderboardRow[]
+  below: LeaderboardRow[]
+  you: (LeaderboardRow & { rank: number }) | null
+  rank: number | null
+  total: number
+}
+
+export interface LeaderboardTopResponse {
+  top: LeaderboardRow[]
+  total: number
+}
+
+export interface FacilitatorTheme {
+  name: string
+  description: string
+  quote_ids: number[]
+}
+
+export interface FacilitatorResponse {
+  id: number
+  username: string
+  text: string
+  created_at: number
+}
+
+export interface FacilitatorResponsesPayload {
+  responses: FacilitatorResponse[]
+  cluster: { themes: FacilitatorTheme[]; quote_count: number; created_at: number } | null
+  clustering: boolean
+}
 
 export interface Challenge {
   id: string

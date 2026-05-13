@@ -1,4 +1,5 @@
 import type { TokenUsage } from '@/types'
+import { Icon } from '@/components/shared/Icon'
 
 interface TokenMeterProps {
   tokens: TokenUsage
@@ -23,15 +24,15 @@ export function TokenMeter({ tokens, analysisMs, executionMs }: TokenMeterProps)
       fontSize: '12px',
       color: 'var(--text-muted)',
     }}>
-      <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>Tokens used:</span>
+      <span style={{ fontWeight: 'var(--fw-semi)', color: 'var(--text-secondary)' }}>Tokens used:</span>
       <span>{tokens.input.toLocaleString()} in</span>
       <span>·</span>
       <span>{tokens.output.toLocaleString()} out</span>
       {hasCacheHit && (
         <>
           <span>·</span>
-          <span style={{ color: 'var(--score-high)', fontWeight: 600 }}>
-            {tokens.cache_read.toLocaleString()} cached ⚡
+          <span style={{ color: 'var(--score-high)', fontWeight: 'var(--fw-semi)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+            {tokens.cache_read.toLocaleString()} cached <Icon.Zap size={12} />
           </span>
         </>
       )}

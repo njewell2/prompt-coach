@@ -1,25 +1,17 @@
 import { useNavigate } from 'react-router-dom'
-import { CHALLENGES } from '@/data/challenges'
+import { CHALLENGES, challengeDisplayTitle } from '@/data/challenges'
 import { useProgress } from '@/hooks/useProgress'
 import { useAuth } from '@/hooks/useAuth'
 import type { Challenge } from '@/types'
-
-const TIER_COLORS = {
-  beginner:     'var(--tier-beginner)',
-  intermediate: 'var(--tier-intermediate)',
-  advanced:     'var(--tier-advanced)',
-}
-
-const TIER_LABELS = {
-  beginner:     'Beginner',
-  intermediate: 'Intermediate',
-  advanced:     'Advanced',
-}
+import { Button } from '@/components/shared/Button'
+import { Icon } from '@/components/shared/Icon'
+import { PageHeader } from '@/components/shared/PageHeader'
 
 type NodeState = 'gold' | 'passed' | 'next' | 'unlocked' | 'locked'
 
+const NODE_COLOR = 'var(--captech-blue)'
+
 function nodeState(
-  challenge: Challenge,
   unlocked: boolean,
   bestScore: number,
   attempted: boolean,
@@ -33,39 +25,37 @@ function nodeState(
   return 'unlocked'
 }
 
-function NodeCircle({ state, tier }: { state: NodeState; tier: Challenge['tier'] }) {
-  const color = TIER_COLORS[tier]
+function NodeCircle({ state }: { state: NodeState }) {
   const size = state === 'next' ? 44 : 36
 
   const bg =
     state === 'gold'    ? 'var(--accent-gold)' :
-    state === 'passed'  ? color :
-    state === 'next'    ? color :
+    state === 'passed'  ? NODE_COLOR :
+    state === 'next'    ? NODE_COLOR :
     state === 'unlocked'? 'var(--bg-card)' :
                           'var(--bg-secondary)'
 
   const border =
     state === 'gold'    ? '2px solid var(--accent-gold)' :
-    state === 'passed'  ? `2px solid ${color}` :
-    state === 'next'    ? `3px solid ${color}` :
-    state === 'unlocked'? `2px solid var(--border)` :
+    state === 'passed'  ? `2px solid ${NODE_COLOR}` :
+    state === 'next'    ? `3px solid ${NODE_COLOR}` :
                           '2px solid var(--border)'
-
-  const icon =
-    state === 'gold'    ? '⭐' :
-    state === 'passed'  ? '✓' :
-    state === 'next'    ? '▶' :
-    state === 'locked'  ? '🔒' :
-                          '○'
 
   const iconColor =
     state === 'gold'    ? 'var(--captech-navy)' :
     state === 'passed'  ? '#fff' :
     state === 'next'    ? '#fff' :
-                          'var(--text-muted)'
+                          'var(--ink-4)'
 
-  const boxShadow =
-    state === 'next' ? `0 0 0 6px ${color}22` : undefined
+  const boxShadow = state === 'next' ? `0 0 0 6px ${NODE_COLOR}22` : undefined
+
+  const iconSize = state === 'next' ? 20 : 16
+  const iconEl =
+    state === 'gold'   ? <Icon.Trophy size={iconSize} /> :
+    state === 'passed' ? <Icon.CheckCircle size={iconSize} /> :
+    state === 'next'   ? <Icon.Play size={iconSize} /> :
+    state === 'locked' ? <Icon.Lock size={iconSize} /> :
+                         <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--ink-4)' }} />
 
   return (
     <div style={{
@@ -75,13 +65,31 @@ function NodeCircle({ state, tier }: { state: NodeState; tier: Challenge['tier']
       border,
       boxShadow,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontSize: state === 'gold' ? '18px' : state === 'next' ? '16px' : '14px',
       color: iconColor,
-      fontWeight: 700,
       flexShrink: 0,
       transition: 'box-shadow 0.2s',
     }}>
-      {icon}
+      {iconEl}
+    </div>
+  )
+}
+
+function SectionDivider({ label }: { label: string }) {
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: '10px',
+      margin: '20px 0 16px',
+    }}>
+      <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
+      <span style={{
+        fontSize: 'var(--fs-micro)', fontWeight: 'var(--fw-semi)', letterSpacing: '0.08em',
+        textTransform: 'uppercase', color: 'var(--ink-3)',
+        background: 'var(--bg-secondary)', padding: '2px 10px',
+        borderRadius: 'var(--radius-full)',
+      }}>
+        {label}
+      </span>
+      <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
     </div>
   )
 }
@@ -92,168 +100,139 @@ export function LevelMap() {
   const { user } = useAuth()
 
   const appStats = stats()
-
-  // Find the "next" challenge: first unlocked, not-passed challenge
   const nextChallenge = CHALLENGES.find(c => isUnlocked(c.id) && (getProgress(c.id)?.best_score ?? 0) < 75)
 
-  const tiers: Array<'beginner' | 'intermediate' | 'advanced'> = ['beginner', 'intermediate', 'advanced']
-
   return (
-    <div style={{ maxWidth: '600px', margin: '0 auto', padding: '40px 24px 64px' }}>
+    <div className="pc-levelmap-page" style={{ maxWidth: '600px', margin: '0 auto', padding: '40px 24px 64px' }}>
+      <style>{`
+        @media (max-width: 640px) {
+          .pc-levelmap-page { padding: 24px 16px 48px !important; }
+        }
+      `}</style>
 
-      {/* Welcome + progress pill */}
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        flexWrap: 'wrap', gap: '12px',
-        marginBottom: '32px',
-      }}>
-        <div>
-          <h1 style={{ fontSize: '22px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '2px' }}>
-            {appStats.totalAttempts > 0 ? `Welcome back, ${user?.username ?? ''}` : `Hey ${user?.username ?? ''}, let's start training`}
-          </h1>
-          <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
-            {appStats.passed} of {appStats.total} challenges passed
-            {appStats.gold > 0 && ` · ${appStats.gold} gold ⭐`}
-          </p>
-        </div>
-        {nextChallenge && (
-          <button
+      <PageHeader
+        size="compact"
+        title={appStats.totalAttempts > 0 ? `Welcome back, ${user?.username ?? ''}` : `Hey ${user?.username ?? ''}, let's start training`}
+        subtitle={
+          <>
+            <span>{appStats.passed} of {appStats.total} challenges passed</span>
+            {appStats.gold > 0 && (
+              <span style={{ marginLeft: '8px', color: 'var(--ink-3)' }}>· {appStats.gold} gold</span>
+            )}
+          </>
+        }
+        right={nextChallenge ? (
+          <Button
             onClick={() => navigate(`/challenge/${nextChallenge.id}`)}
-            style={{
-              background: 'var(--captech-blue)', color: '#fff',
-              border: 'none', borderRadius: 'var(--radius-md)',
-              padding: '10px 20px', fontSize: '13px', fontWeight: 700,
-              cursor: 'pointer', whiteSpace: 'nowrap',
-            }}
+            iconRight={<Icon.ArrowRight size={16} />}
           >
-            {appStats.totalAttempts > 0 ? 'Continue →' : 'Start →'}
-          </button>
-        )}
-      </div>
+            {appStats.totalAttempts > 0 ? 'Continue' : 'Start'}
+          </Button>
+        ) : null}
+      />
 
-      {/* Game map */}
-      {tiers.map(tier => {
-        const tierChallenges = CHALLENGES.filter(c => c.tier === tier)
-        const tierUnlocked = tierChallenges.some(c => isUnlocked(c.id))
-        const tierPassed = tierChallenges.filter(c => (getProgress(c.id)?.best_score ?? 0) >= 75).length
+      {CHALLENGES.map((challenge: Challenge, idx: number) => {
+        const prog = getProgress(challenge.id)
+        const unlocked = isUnlocked(challenge.id)
+        const bestScore = prog?.best_score ?? 0
+        const attempted = (prog?.attempts.length ?? 0) > 0
+        const isNext = challenge.id === nextChallenge?.id
+        const state = nodeState(unlocked, bestScore, attempted, isNext)
+        const isLast = idx === CHALLENGES.length - 1
+        const challengeNumber = idx + 1
 
         return (
-          <div key={tier} style={{ marginBottom: '24px' }}>
-            {/* Tier separator */}
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: '10px',
-              marginBottom: '16px', opacity: tierUnlocked ? 1 : 0.45,
-            }}>
-              <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
-              <span style={{
-                fontSize: '11px', fontWeight: 700, letterSpacing: '0.1em',
-                textTransform: 'uppercase', color: TIER_COLORS[tier],
-                background: 'var(--bg-secondary)', padding: '0 8px',
-              }}>
-                {TIER_LABELS[tier]}
-              </span>
-              <span style={{
-                fontSize: '11px', color: 'var(--text-muted)',
-              }}>
-                {tierPassed}/{tierChallenges.length}
-              </span>
-              <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
-            </div>
+          <div key={challenge.id}>
+            {/* Labeled dividers before challenge 6 ("Putting it together") and challenge 9 ("Combine all five") */}
+            {challengeNumber === 6 && <SectionDivider label="Putting it together" />}
+            {challengeNumber === 9 && <SectionDivider label="Combine all five" />}
 
-            {/* Challenge nodes */}
-            {tierChallenges.map((challenge, idx) => {
-              const prog = getProgress(challenge.id)
-              const unlocked = isUnlocked(challenge.id)
-              const bestScore = prog?.best_score ?? 0
-              const attempted = (prog?.attempts.length ?? 0) > 0
-              const isNext = challenge.id === nextChallenge?.id
-              const state = nodeState(challenge, unlocked, bestScore, attempted, isNext)
-              const isLast = idx === tierChallenges.length - 1
+            <div
+              onClick={() => unlocked && navigate(`/challenge/${challenge.id}`)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '16px',
+                padding: '10px 12px',
+                borderRadius: 'var(--radius-lg)',
+                cursor: unlocked ? 'pointer' : 'default',
+                opacity: state === 'locked' ? 0.45 : 1,
+                transition: 'background 0.15s',
+              }}
+              onMouseEnter={e => {
+                if (unlocked) (e.currentTarget as HTMLDivElement).style.background = 'var(--bg-card-hover)'
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLDivElement).style.background = 'transparent'
+              }}
+            >
+              <NodeCircle state={state} />
 
-              return (
-                <div key={challenge.id}>
-                  {/* Node row */}
-                  <div
-                    onClick={() => unlocked && navigate(`/challenge/${challenge.id}`)}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: '16px',
-                      padding: '10px 12px',
-                      borderRadius: 'var(--radius-lg)',
-                      cursor: unlocked ? 'pointer' : 'default',
-                      opacity: state === 'locked' ? 0.45 : 1,
-                      transition: 'background 0.15s',
-                    }}
-                    onMouseEnter={e => {
-                      if (unlocked) (e.currentTarget as HTMLDivElement).style.background = 'var(--bg-card-hover)'
-                    }}
-                    onMouseLeave={e => {
-                      (e.currentTarget as HTMLDivElement).style.background = 'transparent'
-                    }}
-                  >
-                    <NodeCircle state={state} tier={tier} />
-
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                        <span style={{
-                          fontSize: '14px', fontWeight: state === 'next' ? 700 : 600,
-                          color: state === 'locked' ? 'var(--text-muted)' : 'var(--text-primary)',
-                        }}>
-                          {challenge.title}
-                        </span>
-                        {state === 'next' && (
-                          <span style={{
-                            fontSize: '10px', fontWeight: 700,
-                            color: '#fff', background: TIER_COLORS[tier],
-                            padding: '1px 6px', borderRadius: 'var(--radius-full)',
-                          }}>
-                            NEXT
-                          </span>
-                        )}
-                        {state === 'passed' && bestScore > 0 && (
-                          <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                            {bestScore}/100
-                          </span>
-                        )}
-                      </div>
-                      <div style={{
-                        fontSize: '12px',
-                        color: state === 'locked' ? 'var(--text-muted)' : 'var(--text-secondary)',
-                        marginTop: '1px',
-                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                      }}>
-                        {challenge.structural_task}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Connector line between nodes */}
-                  {!isLast && (
-                    <div style={{
-                      marginLeft: '34px',
-                      width: '2px', height: '16px',
-                      background: 'var(--border)',
-                    }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', flexWrap: 'wrap' }}>
+                  <span style={{
+                    fontSize: 'var(--fs-micro)', fontWeight: 'var(--fw-semi)',
+                    color: 'var(--ink-4)', letterSpacing: '0.06em',
+                  }}>
+                    {String(challengeNumber).padStart(2, '0')}
+                  </span>
+                  <span style={{
+                    fontSize: 'var(--fs-body)', fontWeight: state === 'next' ? 'var(--fw-bold)' : 'var(--fw-semi)',
+                    color: state === 'locked' ? 'var(--ink-4)' : 'var(--ink)',
+                  }}>
+                    {challengeDisplayTitle(challenge)}
+                  </span>
+                  {state === 'next' && (
+                    <span style={{
+                      fontSize: 'var(--fs-micro)', fontWeight: 'var(--fw-bold)',
+                      color: '#fff', background: NODE_COLOR,
+                      padding: '2px 8px', borderRadius: 'var(--radius-full)',
+                      letterSpacing: '0.06em',
+                    }}>
+                      NEXT
+                    </span>
+                  )}
+                  {state === 'passed' && bestScore > 0 && (
+                    <span style={{ fontSize: 'var(--fs-micro)', color: 'var(--ink-3)', fontWeight: 'var(--fw-semi)' }}>
+                      {bestScore}/100
+                    </span>
                   )}
                 </div>
-              )
-            })}
+                <div style={{
+                  fontSize: 'var(--fs-small)',
+                  color: state === 'locked' ? 'var(--ink-4)' : 'var(--ink-3)',
+                  marginTop: '2px',
+                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                }}>
+                  {challenge.structural_task}
+                </div>
+              </div>
+            </div>
+
+            {!isLast && (
+              <div style={{
+                marginLeft: '34px',
+                width: '2px', height: '16px',
+                background: 'var(--border)',
+              }} />
+            )}
           </div>
         )
       })}
 
       {/* Free Practice CTA */}
       <div style={{
-        marginTop: '32px', padding: '20px 24px',
+        marginTop: '32px',
+        padding: '20px 24px',
         background: 'var(--captech-navy)',
         borderRadius: 'var(--radius-lg)',
+        borderLeft: 'var(--accent-left-gold)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         gap: '16px', flexWrap: 'wrap',
       }}>
         <div>
-          <div style={{ fontSize: '14px', fontWeight: 700, color: '#fff', marginBottom: '2px' }}>
+          <div style={{ fontSize: 'var(--fs-h3)', fontWeight: 'var(--fw-bold)', color: '#fff', marginBottom: '4px' }}>
             Free Practice
           </div>
-          <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)' }}>
+          <div style={{ fontSize: 'var(--fs-small)', color: 'rgba(255,255,255,0.7)' }}>
             Submit any prompt and see the AI-improved version instantly.
           </div>
         </div>
@@ -262,11 +241,13 @@ export function LevelMap() {
           style={{
             background: 'var(--captech-yellow)', color: 'var(--captech-navy)',
             border: 'none', borderRadius: 'var(--radius-md)',
-            padding: '8px 18px', fontSize: '13px', fontWeight: 700,
+            padding: '10px 18px', fontSize: 'var(--fs-body)', fontWeight: 'var(--fw-semi)',
             cursor: 'pointer', whiteSpace: 'nowrap',
+            display: 'inline-flex', alignItems: 'center', gap: '6px',
+            minHeight: '40px',
           }}
         >
-          Open →
+          Open <Icon.ArrowRight size={15} />
         </button>
       </div>
     </div>

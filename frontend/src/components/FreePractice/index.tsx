@@ -7,7 +7,8 @@ import { ScoreDisplay } from '@/components/ScoreDisplay'
 import { TokenMeter } from '@/components/TokenMeter'
 import { Button } from '@/components/shared/Button'
 import { ErrorBanner } from '@/components/shared/ErrorBanner'
-import { AnalysisLoadingState } from '@/components/shared/LoadingShimmer'
+import { AnalysisLoadingState, ScoreCardShimmer, Shimmer } from '@/components/shared/LoadingShimmer'
+import { PageHeader } from '@/components/shared/PageHeader'
 import { scoreLabel, toDisplayScore } from '@/utils/score'
 
 export function FreePractice() {
@@ -21,8 +22,9 @@ export function FreePractice() {
   const exec = useExecute()
   const { addEntry } = useHistory()
 
-  const isLoading = analyze.phase === 'loading'
-  const hasResult = analyze.phase === 'done' && analyze.result !== null
+  const isLoading = analyze.isLoading
+  const hasPartial = analyze.partial !== null
+  const partial = analyze.partial
 
   const canSubmit = prompt.trim().length >= 10 && !isLoading
 
@@ -35,18 +37,18 @@ export function FreePractice() {
 
   // When analysis completes in practice mode, improved_prompt is included → auto-execute it
   useEffect(() => {
-    if (analyze.phase === 'done' && analyze.result?.improved_prompt && exec.phase === 'idle') {
+    if (analyze.phase === 'done' && analyze.result?.improved_prompt && exec.expertExec.phase === 'idle') {
       // In practice mode we already have the improved prompt — no reveal needed, just execute
-      exec.executeOnly(analyze.result.improved_prompt)
+      exec.executeExpertOnly(analyze.result.improved_prompt)
     }
   }, [analyze.phase, analyze.result?.improved_prompt])
 
   // Save to history when execution completes
   useEffect(() => {
-    if (exec.phase === 'done' && analyze.result && submittedPrompt) {
+    if (exec.expertExec.phase === 'done' && analyze.result && submittedPrompt) {
       addEntry(submittedPrompt, analyze.result)
     }
-  }, [exec.phase])
+  }, [exec.expertExec.phase])
 
   function handleReset() {
     analyze.reset()
@@ -65,20 +67,19 @@ export function FreePractice() {
   }
 
   return (
-    <div style={{ maxWidth: '900px', margin: '0 auto', padding: '48px 24px' }}>
-      {/* Page header */}
-      <div style={{ marginBottom: '36px' }}>
-        <h1 style={{ fontSize: '28px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '8px' }}>
-          Free Practice
-        </h1>
-        <div style={{ width: '40px', height: '3px', background: 'var(--accent-gold)', borderRadius: '2px', marginBottom: '12px' }} />
-        <p style={{ fontSize: '15px', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-          Submit any prompt and instantly see how an expert version compares — no levels, no locks.
-        </p>
-      </div>
+    <div className="pc-practice-page" style={{ maxWidth: '900px', margin: '0 auto', padding: '48px 24px' }}>
+      <style>{`
+        @media (max-width: 720px) {
+          .pc-practice-page { padding: 24px 16px !important; }
+        }
+      `}</style>
+      <PageHeader
+        title="Free Practice"
+        subtitle="Submit any prompt and instantly see how an expert version compares — no levels, no locks."
+      />
 
       {/* Input section */}
-      {!hasResult && (
+      {!hasPartial && (
         <div style={{
           background: 'var(--bg-card)', border: '1px solid var(--border)',
           borderRadius: 'var(--radius-lg)', padding: '28px',
@@ -153,16 +154,18 @@ export function FreePractice() {
         </div>
       )}
 
-      {/* Loading state */}
-      {isLoading && <AnalysisLoadingState statusText="Analyzing and generating expert version…" />}
+      {/* Loading state — only before any data has arrived */}
+      {isLoading && (!partial || partial.dimensions.length === 0) && (
+        <AnalysisLoadingState statusText="Analyzing and generating expert version…" />
+      )}
 
       {/* Error */}
       {analyze.phase === 'error' && analyze.error && (
         <ErrorBanner message={analyze.error} />
       )}
 
-      {/* Results */}
-      {hasResult && analyze.result && (
+      {/* Results — render incrementally as `partial` fills */}
+      {hasPartial && partial && (!isLoading || partial.dimensions.length > 0) && (
         <div className="fade-in-up">
           {/* Score comparison header */}
           <div style={{
@@ -180,28 +183,36 @@ export function FreePractice() {
             </div>
 
             <div style={{ display: 'flex', gap: '40px', justifyContent: 'center', flexWrap: 'wrap' }}>
-              <ScoreDisplay
-                score={analyze.result.overall_score}
-                label="Your Prompt"
-                size={120}
-              />
-              {analyze.result.improved_overall_score !== undefined && (
+              {typeof partial.overall_score === 'number' ? (
+                <ScoreDisplay
+                  score={partial.overall_score}
+                  label="Your Prompt"
+                  size={120}
+                />
+              ) : (
+                <Shimmer width={120} height={120} borderRadius="50%" />
+              )}
+              {(typeof partial.improved_overall_score === 'number' || isLoading) && (
                 <>
                   <div style={{
                     display: 'flex', alignItems: 'center',
                     fontSize: '24px', color: 'var(--text-muted)',
                   }}>→</div>
-                  <ScoreDisplay
-                    score={analyze.result.improved_overall_score}
-                    label="Expert Version"
-                    size={120}
-                  />
+                  {typeof partial.improved_overall_score === 'number' ? (
+                    <ScoreDisplay
+                      score={partial.improved_overall_score}
+                      label="Expert Version"
+                      size={120}
+                    />
+                  ) : (
+                    <Shimmer width={120} height={120} borderRadius="50%" />
+                  )}
                 </>
               )}
             </div>
 
             {/* Grade + delta summary */}
-            {analyze.result.improved_overall_score !== undefined && (
+            {typeof partial.improved_overall_score === 'number' && typeof partial.overall_score === 'number' && (
               <div style={{
                 display: 'flex', justifyContent: 'center', marginTop: '20px',
               }}>
@@ -211,31 +222,33 @@ export function FreePractice() {
                   borderRadius: 'var(--radius-full)',
                   border: '1px solid var(--score-high)',
                 }}>
-                  +{toDisplayScore(analyze.result.improved_overall_score) - toDisplayScore(analyze.result.overall_score)} points improvement
-                  {' '}({scoreLabel(analyze.result.overall_score, true)} → {scoreLabel(analyze.result.improved_overall_score ?? 0, true)})
+                  +{toDisplayScore(partial.improved_overall_score) - toDisplayScore(partial.overall_score)} points improvement
+                  {' '}({scoreLabel(partial.overall_score, true)} → {scoreLabel(partial.improved_overall_score, true)})
                 </span>
               </div>
             )}
 
             {/* Token meter */}
-            {analyze.result.tokens && (
+            {partial.tokens && (
               <div style={{ marginTop: '20px' }}>
                 <TokenMeter
-                  tokens={analyze.result.tokens}
-                  analysisMs={analyze.result.analysis_time_ms}
+                  tokens={partial.tokens}
+                  analysisMs={partial.analysis_time_ms ?? 0}
                 />
               </div>
             )}
           </div>
 
           {/* Strengths & Improvements */}
-          <div style={{
-            display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px',
-            marginBottom: '24px',
-          }}>
-            <CoachCard title="Strengths" items={analyze.result.strengths} color="var(--score-high)" icon="✓" />
-            <CoachCard title="To Improve" items={analyze.result.improvements} color="var(--score-mid)" icon="↑" />
-          </div>
+          {(partial.strengths || partial.improvements) && (
+            <div style={{
+              display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px',
+              marginBottom: '24px',
+            }}>
+              <CoachCard title="Strengths" items={partial.strengths ?? []} color="var(--score-high)" icon="✓" />
+              <CoachCard title="To Improve" items={partial.improvements ?? []} color="var(--score-mid)" icon="↑" />
+            </div>
+          )}
 
           {/* Dimension comparison cards */}
           <div style={{ marginBottom: '32px' }}>
@@ -243,20 +256,23 @@ export function FreePractice() {
               Dimension Breakdown
             </h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(380px, 1fr))', gap: '16px' }}>
-              {analyze.result.dimensions.map((dim, i) => (
+              {partial.dimensions.map((dim, i) => (
                 <DimensionCard
                   key={dim.id}
                   dimension={dim}
-                  improvedScore={analyze.result?.improved_dimensions?.[i]?.score}
+                  improvedScore={partial.improved_dimensions?.[i]?.score}
                   showComparison={true}
                   animationDelay={i * 60}
                 />
+              ))}
+              {isLoading && Array.from({ length: Math.max(0, 5 - partial.dimensions.length) }).map((_, i) => (
+                <ScoreCardShimmer key={`shim-${i}`} />
               ))}
             </div>
           </div>
 
           {/* Expert prompt */}
-          {analyze.result.improved_prompt && (
+          {partial.improved_prompt && (
             <div style={{
               background: 'var(--bg-card)', border: '1px solid var(--border)',
               borderRadius: 'var(--radius-lg)', padding: '28px',
@@ -269,7 +285,7 @@ export function FreePractice() {
                 <Button
                   variant="secondary"
                   size="sm"
-                  onClick={() => handleCopy(analyze.result!.improved_prompt!)}
+                  onClick={() => handleCopy(partial.improved_prompt!)}
                 >
                   {copied ? '✓ Copied' : 'Copy'}
                 </Button>
@@ -281,7 +297,7 @@ export function FreePractice() {
                 fontFamily: 'var(--font-mono)', margin: 0,
                 border: '1px solid var(--border)',
               }}>
-                {analyze.result.improved_prompt}
+                {partial.improved_prompt}
               </pre>
             </div>
           )}
@@ -295,7 +311,7 @@ export function FreePractice() {
             <h3 style={{ fontSize: '17px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '16px' }}>
               AI Response to Expert Prompt
             </h3>
-            {exec.phase === 'executing' ? (
+            {exec.expertExec.phase === 'streaming' && !exec.expertExec.text ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: 'var(--text-muted)' }}>
                 <div style={{
                   width: '16px', height: '16px', border: '2px solid var(--border)',
@@ -304,7 +320,9 @@ export function FreePractice() {
                 }} />
                 <span style={{ fontSize: '13px' }}>Running expert prompt…</span>
               </div>
-            ) : exec.phase === 'done' && exec.execution ? (
+            ) : exec.expertExec.phase === 'error' ? (
+              <ErrorBanner message={exec.expertExec.error ?? 'Execution failed'} />
+            ) : exec.expertExec.text ? (
               <>
                 <div style={{
                   fontSize: '14px', color: 'var(--text-primary)', lineHeight: 1.7,
@@ -312,16 +330,17 @@ export function FreePractice() {
                   borderRadius: 'var(--radius-md)', padding: '16px',
                   border: '1px solid var(--border)',
                 }}>
-                  {exec.execution.response}
+                  {exec.expertExec.text}
                 </div>
-                {exec.execution.tokens && (
+                {exec.expertExec.phase === 'done' && exec.expertExec.tokens && (
                   <div style={{ marginTop: '12px' }}>
-                    <TokenMeter tokens={{ ...exec.execution.tokens, cache_read: 0, cache_creation: 0 }} executionMs={exec.execution.execution_time_ms} />
+                    <TokenMeter
+                      tokens={{ ...exec.expertExec.tokens, cache_read: 0, cache_creation: 0 }}
+                      executionMs={exec.expertExec.executionMs}
+                    />
                   </div>
                 )}
               </>
-            ) : exec.phase === 'error' ? (
-              <ErrorBanner message={exec.error ?? 'Execution failed'} />
             ) : null}
           </div>
 

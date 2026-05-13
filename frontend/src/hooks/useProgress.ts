@@ -1,23 +1,74 @@
-import { useState, useCallback, useEffect } from 'react'
-import type { ChallengeProgress, ChallengeAttempt, DimensionScore } from '@/types'
+import { useState, useCallback, useEffect, createContext, useContext, type ReactNode, createElement } from 'react'
+import type {
+  Badge,
+  ChallengeAttempt,
+  ChallengeProgress,
+  DimensionScore,
+  UserProgressResponse,
+  XpEvent,
+} from '@/types'
 import { CHALLENGES } from '@/data/challenges'
+import { useAuth } from '@/hooks/useAuth'
 
-export function useProgress() {
+const EMPTY_BADGES: Record<string, Badge> = {}
+
+interface ProgressContextValue {
+  progress: Map<string, ChallengeProgress>
+  loaded: boolean
+  isUnlocked: (challengeId: string) => boolean
+  addAttempt: (challengeId: string, prompt: string, score: number, dimensions: DimensionScore[], strengths?: string[], improvements?: string[], sessionToken?: string) => void
+  applyAttemptServerSide: (xpEarned: XpEvent[] | undefined, xpTotalFromServer: number | undefined, newBadges: string[] | undefined) => void
+  markRevealed: (challengeId: string) => void
+  canReveal: (challengeId: string) => boolean
+  getProgress: (challengeId: string) => ChallengeProgress | undefined
+  dimensionAverages: () => Record<string, number>
+  stats: () => { passed: number; gold: number; totalAttempts: number; total: number }
+  clearAll: () => void
+  refresh: () => Promise<void>
+  xpTotal: number
+  xpEvents: XpEvent[]
+  badges: Record<string, Badge>
+  rank: { position: number | null; total: number }
+}
+
+const ProgressContext = createContext<ProgressContextValue | null>(null)
+
+export function ProgressProvider({ children }: { children: ReactNode }) {
   const [progress, setProgress] = useState<Map<string, ChallengeProgress>>(new Map)
   const [loaded, setLoaded] = useState(false)
+  const [xpTotal, setXpTotal] = useState(0)
+  const [xpEvents, setXpEvents] = useState<XpEvent[]>([])
+  const [badges, setBadges] = useState<Record<string, Badge>>(EMPTY_BADGES)
+  const [rank, setRank] = useState<{ position: number | null; total: number }>({ position: null, total: 0 })
 
-  // Load from server on mount
-  useEffect(() => {
-    fetch('/api/user/progress')
-      .then(r => r.ok ? r.json() : null)
-      .then(data => {
-        if (data?.challenges) {
-          setProgress(new Map(Object.entries(data.challenges) as [string, ChallengeProgress][]))
-        }
-        setLoaded(true)
-      })
-      .catch(() => setLoaded(true))
+  const applyServerPayload = useCallback((data: UserProgressResponse) => {
+    if (data.challenges) {
+      setProgress(new Map(Object.entries(data.challenges) as [string, ChallengeProgress][]))
+    }
+    if (typeof data.xp_total === 'number') setXpTotal(data.xp_total)
+    if (Array.isArray(data.xp_events)) setXpEvents(data.xp_events)
+    if (data.badges) setBadges(data.badges)
+    if (data.rank) setRank(data.rank)
   }, [])
+
+  const refresh = useCallback(async () => {
+    try {
+      const res = await fetch('/api/user/progress')
+      if (res.ok) {
+        const data = await res.json()
+        applyServerPayload(data)
+      }
+    } catch {
+      // swallow; keep existing state
+    } finally {
+      setLoaded(true)
+    }
+  }, [applyServerPayload])
+
+  const { user } = useAuth()
+  useEffect(() => {
+    if (user) refresh()
+  }, [user, refresh])
 
   const isUnlocked = useCallback((challengeId: string): boolean => {
     const challenge = CHALLENGES.find(c => c.id === challengeId)
@@ -27,12 +78,13 @@ export function useProgress() {
     return (prev?.best_score ?? 0) >= 75
   }, [progress])
 
-  // Optimistic local update — DB write happens server-side in /api/analyze
   const addAttempt = useCallback((
     challengeId: string,
     prompt: string,
     score: number,
     dimensions: DimensionScore[],
+    strengths?: string[],
+    improvements?: string[],
     sessionToken?: string,
   ) => {
     setProgress(prev => {
@@ -50,6 +102,8 @@ export function useProgress() {
         prompt,
         score,
         dimensions,
+        strengths,
+        improvements,
         session_token: sessionToken,
       }
       const attempts = [...existing.attempts, attempt]
@@ -65,8 +119,18 @@ export function useProgress() {
     })
   }, [])
 
+  const applyAttemptServerSide = useCallback((xpEarned: XpEvent[] | undefined, xpTotalFromServer: number | undefined, newBadges: string[] | undefined) => {
+    if (Array.isArray(xpEarned) && xpEarned.length > 0) {
+      setXpEvents(prev => [...prev, ...xpEarned])
+    }
+    if (typeof xpTotalFromServer === 'number') setXpTotal(xpTotalFromServer)
+    if (Array.isArray(newBadges) && newBadges.length > 0) {
+      // Refetch to pick up accurate badge state + rank
+      refresh()
+    }
+  }, [refresh])
+
   const markRevealed = useCallback((challengeId: string) => {
-    // Persist to server
     fetch('/api/user/reveal', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -122,16 +186,34 @@ export function useProgress() {
     setProgress(new Map())
   }, [])
 
-  return {
-    progress,
-    loaded,
-    isUnlocked,
-    addAttempt,
-    markRevealed,
-    canReveal,
-    getProgress,
-    dimensionAverages,
-    stats,
-    clearAll,
-  }
+  return createElement(
+    ProgressContext.Provider,
+    {
+      value: {
+        progress,
+        loaded,
+        isUnlocked,
+        addAttempt,
+        applyAttemptServerSide,
+        markRevealed,
+        canReveal,
+        getProgress,
+        dimensionAverages,
+        stats,
+        clearAll,
+        refresh,
+        xpTotal,
+        xpEvents,
+        badges,
+        rank,
+      },
+    },
+    children,
+  )
+}
+
+export function useProgress(): ProgressContextValue {
+  const ctx = useContext(ProgressContext)
+  if (!ctx) throw new Error('useProgress must be used within <ProgressProvider>')
+  return ctx
 }

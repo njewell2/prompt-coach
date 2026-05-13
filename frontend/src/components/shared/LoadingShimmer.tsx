@@ -16,6 +16,30 @@ export function Shimmer({ width = '100%', height = 16, borderRadius = 'var(--rad
   )
 }
 
+export function ResponseCardShimmer({ title }: { title?: string }) {
+  return (
+    <div style={{
+      background: 'var(--bg-card)', border: '1px solid var(--border)',
+      borderRadius: 'var(--radius-lg)', padding: '24px',
+      boxShadow: 'var(--shadow-card)',
+      display: 'flex', flexDirection: 'column', gap: '12px',
+    }}>
+      {title ? (
+        <h4 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px' }}>
+          {title}
+        </h4>
+      ) : (
+        <Shimmer width={180} height={16} />
+      )}
+      <Shimmer width="92%" height={12} />
+      <Shimmer width="100%" height={12} />
+      <Shimmer width="85%" height={12} />
+      <Shimmer width="78%" height={12} />
+      <Shimmer width="60%" height={12} />
+    </div>
+  )
+}
+
 export function ScoreCardShimmer() {
   return (
     <div style={{

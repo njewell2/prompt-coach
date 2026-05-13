@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Light cool gray fill with CapTech yellow frame -->
+  <rect x="3" y="3" width="58" height="58" rx="8" ry="8" fill="#EEF2F6" stroke="#FDDA24" stroke-width="5"/>
+  <!-- CapTech blue "C", centered inside the frame -->
+  <g fill="#005DB9" transform="translate(15.28 10.81) scale(0.36)">
+    <path d="m91.18,108.11c-4.35,2.17-15.53,4.97-29.82,4.97C18.95,113.08,0,88.69,0,60.58,0,24.23,28.58,4.66,62.91,4.66c13.51,0,24.85,2.49,29.98,5.28l-6.06,22.68c-5.28-2.17-13.05-4.35-22.83-4.35-17.55,0-33.09,9.47-33.09,30.29,0,18.02,12.27,30.6,33.86,30.6,8.08,0,16.93-1.55,21.9-3.57l4.5,22.52Z"/>
+  </g>
+</svg>

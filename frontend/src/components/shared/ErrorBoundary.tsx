@@ -17,11 +17,14 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.state.error) {
       return (
         <div style={{ padding: '40px 24px', maxWidth: '700px', margin: '0 auto' }}>
-          <h2 style={{ color: '#D94032', marginBottom: '12px' }}>Application Error</h2>
+          <h2 style={{ color: 'var(--score-low)', marginBottom: '12px' }}>Application Error</h2>
           <pre style={{
-            background: '#FEF2F2', border: '1px solid #fca5a5',
-            borderRadius: '8px', padding: '16px',
-            fontSize: '13px', color: '#7f1d1d',
+            background: 'var(--score-low-bg)',
+            border: '1px solid var(--score-low)',
+            borderRadius: 'var(--radius-lg)',
+            padding: '16px',
+            fontSize: 'var(--fs-small)',
+            color: 'var(--score-low)',
             whiteSpace: 'pre-wrap', wordBreak: 'break-word',
           }}>
             {this.state.error.message}

@@ -25,7 +25,7 @@ interface AuthContextValue {
   user: AuthUser | null
   loading: boolean
   error: string | null
-  login: (username: string, email: string) => Promise<boolean>
+  login: (username: string, email: string, focusResponse?: string) => Promise<boolean>
   logout: () => Promise<void>
   revalidate: () => Promise<void>
 }
@@ -37,14 +37,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const login = useCallback(async (username: string, email: string) => {
+  const login = useCallback(async (username: string, email: string, focusResponse?: string) => {
     setLoading(true)
     setError(null)
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, email }),
+        body: JSON.stringify({ username, email, focus_response: focusResponse ?? '' }),
       })
       const data = await res.json()
       if (!res.ok) {

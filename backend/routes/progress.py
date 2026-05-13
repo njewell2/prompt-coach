@@ -1,5 +1,13 @@
-from flask import Blueprint, jsonify, session, request
-from backend.db import get_user_progress, mark_revealed
+from flask import Blueprint, jsonify, request, session
+
+from backend.common.badges import compute_badges
+from backend.db import (
+    get_user_progress,
+    get_user_xp,
+    get_xp_events,
+    leaderboard_rows,
+    mark_revealed,
+)
 
 progress_bp = Blueprint("progress", __name__)
 
@@ -10,7 +18,18 @@ def user_progress():
     if not user_id:
         return jsonify({"error": "not authenticated"}), 401
     challenges = get_user_progress(user_id)
-    return jsonify({"challenges": challenges})
+
+    rows = leaderboard_rows()
+    total = len(rows)
+    rank = next((i + 1 for i, r in enumerate(rows) if r["user_id"] == user_id), None)
+
+    return jsonify({
+        "challenges": challenges,
+        "xp_total": get_user_xp(user_id),
+        "xp_events": get_xp_events(user_id),
+        "badges": compute_badges(user_id),
+        "rank": {"position": rank, "total": total},
+    })
 
 
 @progress_bp.route("/api/user/reveal", methods=["POST"])

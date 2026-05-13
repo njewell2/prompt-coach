@@ -3,37 +3,47 @@
 
 :root {
   /* ── CapTech Brand Colors ── */
-  --captech-blue:        #005DB9;   /* Primary brand blue */
-  --captech-navy:        #003865;   /* Deep navy */
-  --captech-yellow:      #FDDA24;   /* Brand accent yellow */
-  --captech-cyan:        #00A5DF;   /* Secondary accent */
-  --captech-dark-navy:   #002B5F;   /* Darkest blue — hero bgs */
+  --captech-blue:        #005DB9;
+  --captech-navy:        #003865;
+  --captech-yellow:      #FDDA24;
+  --captech-cyan:        #00A5DF;
+  --captech-dark-navy:   #002B5F;
 
-  /* ── Backgrounds ── */
-  --bg-primary:    #ffffff;
-  --bg-secondary:  #F7F7F7;
-  --bg-card:       #ffffff;
-  --bg-card-hover: #EEF5FC;
+  /* ── Ink (CasePath-aligned near-black palette) ── */
+  --ink:     #0F172A;   /* headings */
+  --ink-2:   #334155;   /* body */
+  --ink-3:   #64748B;   /* muted */
+  --ink-4:   #94A3B8;   /* quiet captions */
 
-  /* ── Text ── */
-  --text-primary:   #003865;   /* CapTech navy for headings */
-  --text-secondary: #5C656D;
-  --text-muted:     #8A9AB0;
+  /* Back-compat text tokens now point at ink palette */
+  --text-primary:   var(--ink);
+  --text-secondary: var(--ink-2);
+  --text-muted:     var(--ink-3);
   --text-inverse:   #ffffff;
 
-  /* ── Accent (mapped to CapTech palette) ── */
-  --accent-navy:      #003865;
-  --accent-blue:      #005DB9;
-  --accent-gold:      #FDDA24;
-  --accent-gold-light:#FFFBE6;
-  --accent-cyan:      #00A5DF;
+  /* ── Surfaces (slightly cooler than before) ── */
+  --page-bg:        #F6F8FA;
+  --bg-primary:     #ffffff;
+  --bg-secondary:   var(--page-bg);
+  --bg-card:        #ffffff;
+  --bg-card-hover:  #F9FBFD;
+  --surface:        #ffffff;
+  --surface-hover:  #F9FBFD;
+  --surface-quiet:  #F4F6F9;
 
-  /* ── Tier colors (CapTech palette) ── */
-  --tier-beginner:        #005DB9;
+  /* ── Accent mappings ── */
+  --accent-navy:      var(--captech-navy);
+  --accent-blue:      var(--captech-blue);
+  --accent-gold:      var(--captech-yellow);
+  --accent-gold-light:#FFFBE6;
+  --accent-cyan:      var(--captech-cyan);
+
+  /* ── Tier colors ── */
+  --tier-beginner:        var(--captech-blue);
   --tier-beginner-bg:     #EEF5FC;
-  --tier-intermediate:    #00A5DF;
+  --tier-intermediate:    var(--captech-cyan);
   --tier-intermediate-bg: #E6F6FC;
-  --tier-advanced:        #003865;
+  --tier-advanced:        var(--captech-navy);
   --tier-advanced-bg:     #E6EDF4;
 
   /* ── Scores ── */
@@ -44,19 +54,47 @@
   --score-high:    #1A7E42;
   --score-high-bg: #F0FDF4;
 
-  /* ── UI Chrome ── */
-  --border:       #E2E8F0;
-  --border-focus: #005DB9;
-  --shadow-card:       0 1px 3px rgba(0,56,101,0.06), 0 4px 16px rgba(0,56,101,0.04);
-  --shadow-card-hover: 0 4px 12px rgba(0,56,101,0.12), 0 8px 24px rgba(0,56,101,0.06);
-  --shadow-elevated:   0 8px 32px rgba(0,56,101,0.12);
+  /* ── Research sources (formerly inline hex) ── */
+  --source-anthropic: #D97706;
+  --source-google:    #1E56B0;
+  --source-openai:    #16A34A;
+  --source-meta:      #7C3AED;
+  --source-arxiv:     #DB2777;
 
-  /* ── Radius ── */
+  /* ── Medal ramp (ranks 1-3 on leaderboards) ── */
+  --medal-gold:   #E8B923;
+  --medal-silver: #B5B5B5;
+  --medal-bronze: #CD7F32;
+
+  /* ── Chrome ── */
+  --border:         #E3E8EF;
+  --border-strong:  #CBD5E1;
+  --border-focus:   var(--captech-blue);
+
+  /* Flatter shadows (CasePath style) */
+  --shadow-card:        0 1px 2px rgba(15, 23, 42, 0.05);
+  --shadow-card-hover:  0 2px 6px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-elevated:    0 8px 24px rgba(15, 23, 42, 0.10);
+
+  /* ── Radius (tightened) ── */
   --radius-sm:   4px;
   --radius-md:   6px;
-  --radius-lg:   10px;
-  --radius-xl:   14px;
+  --radius-lg:   8px;
+  --radius-xl:   12px;
   --radius-full: 9999px;
+
+  /* ── Type scale ── */
+  --fs-display: 32px;
+  --fs-h1:      24px;
+  --fs-h2:      18px;
+  --fs-h3:      15px;
+  --fs-body:    14px;
+  --fs-small:   13px;
+  --fs-micro:   11px;
+
+  --fw-bold: 700;
+  --fw-semi: 600;
+  --fw-reg:  400;
 
   /* ── Typography ── */
   --font-sans: 'canada-type-gibson', 'Gibson', 'Helvetica Neue', Arial, sans-serif;
@@ -66,6 +104,10 @@
   --section-pad:  64px;
   --page-max:     1280px;
   --content-max:  900px;
+
+  /* ── Accent borders ── */
+  --accent-left-gold: 4px solid var(--captech-yellow);
+  --accent-left-blue: 4px solid var(--captech-blue);
 }
 
 *, *::before, *::after {
@@ -83,9 +125,10 @@ html {
 body {
   font-family: var(--font-sans);
   background: var(--bg-secondary);
-  color: var(--text-primary);
-  line-height: 1.6;
+  color: var(--ink-2);
+  line-height: 1.55;
   min-height: 100vh;
+  overscroll-behavior-y: contain;
 }
 
 #root {
@@ -115,8 +158,49 @@ button:focus-visible {
   outline-offset: 2px;
 }
 
-textarea, input {
+textarea, input, select {
   font-family: var(--font-sans);
+  /* Prevent iOS Safari auto-zoom on focus: kicks in when font-size < 16px */
+  font-size: 16px;
+}
+
+button, [role="button"] {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ── Typography baselines ── */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--ink);
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+}
+h1 { font-size: var(--fs-display); font-weight: var(--fw-bold); }
+h2 { font-size: var(--fs-h1);      font-weight: var(--fw-bold); }
+h3 { font-size: var(--fs-h2);      font-weight: var(--fw-semi); }
+p  { color: var(--ink-2); }
+
+/* ── Mobile overrides ── */
+@media (max-width: 640px) {
+  :root {
+    --section-pad: 24px;
+    --fs-display: 26px;
+    --fs-h1:      20px;
+  }
+}
+
+/* ── Reduced motion ──
+   Per DESIGN.md "Every animation is intentional" and the PRODUCT.md
+   accessibility commitment, honor prefers-reduced-motion by neutralizing
+   every decorative animation. State changes still happen, just instantly. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* Shimmer animation */
@@ -146,7 +230,11 @@ textarea, input {
   50%       { transform: scale(1.15); }
 }
 
-/* CapTech yellow underline accent — used under section headings */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Legacy helper kept for back-compat; no longer auto-applied under every heading */
 .ct-underline {
   width: 40px;
   height: 3px;

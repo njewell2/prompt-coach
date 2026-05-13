@@ -8,6 +8,8 @@ from backend.routes.analyze import analyze_bp
 from backend.routes.execute import execute_bp
 from backend.routes.auth import auth_bp
 from backend.routes.progress import progress_bp
+from backend.routes.leaderboard import leaderboard_bp
+from backend.routes.facilitator import facilitator_bp
 from backend.db import init_db
 
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
@@ -19,6 +21,8 @@ app.register_blueprint(analyze_bp)
 app.register_blueprint(execute_bp)
 app.register_blueprint(auth_bp)
 app.register_blueprint(progress_bp)
+app.register_blueprint(leaderboard_bp)
+app.register_blueprint(facilitator_bp)
 
 
 @app.route("/health")

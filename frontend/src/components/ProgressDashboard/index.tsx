@@ -2,103 +2,94 @@ import { useNavigate } from 'react-router-dom'
 import { useProgress } from '@/hooks/useProgress'
 import { CHALLENGES, DIMENSION_META } from '@/data/challenges'
 import { scoreColor } from '@/utils/score'
+import { Leaderboard } from '@/components/Leaderboard'
+import { PageHeader } from '@/components/shared/PageHeader'
+import { StatCard } from '@/components/shared/StatCard'
+import { Card } from '@/components/shared/Card'
+import { Button } from '@/components/shared/Button'
+import { Icon } from '@/components/shared/Icon'
 
-const DIM_IDS = [
-  'clarity_directness',
-  'context_background',
-  'output_specification',
-  'role_persona',
-  'examples_few_shot',
-  'reasoning_guidance',
-  'constraint_definition',
-  'task_decomposition',
-]
+const BADGE_ICONS: Record<string, (p: any) => JSX.Element> = {
+  golden_beginner: Icon.Trophy,
+  dimension_master: Icon.Target,
+  completionist:    Icon.Flag,
+}
 
-// Simple SVG radar chart — no external deps
+const XP_REASON_LABELS: Record<string, string> = {
+  attempt: 'Attempts',
+  pass: 'Challenges passed',
+  gold: 'Gold-scored challenges',
+  first_try: 'First-try passes',
+  improve: 'Big improvements',
+  perfect_dim: 'Perfect areas',
+  reveal: 'Expert reveals',
+}
+
+const AREA_IDS = ['clarity', 'context', 'output', 'examples', 'thinking']
+
 function RadarChart({ averages }: { averages: Record<string, number> }) {
   const size = 280
   const cx = size / 2
   const cy = size / 2
   const maxR = 110
-  const n = DIM_IDS.length
+  const n = AREA_IDS.length
 
   function polarToXY(angle: number, r: number) {
     const rad = (angle - 90) * (Math.PI / 180)
     return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) }
   }
 
-  const angles = DIM_IDS.map((_, i) => (360 / n) * i)
-
-  // Grid rings at 2, 4, 6, 8, 10
+  const angles = AREA_IDS.map((_, i) => (360 / n) * i)
   const rings = [2, 4, 6, 8, 10]
 
-  // Data polygon
-  const dataPoints = DIM_IDS.map((id, i) => {
-    const val = averages[id] ?? 0
-    const r = (val / 10) * maxR
+  const values = AREA_IDS.map(id => averages[id] ?? 0)
+  const dataPoints = AREA_IDS.map((_, i) => {
+    const r = (values[i] / 10) * maxR
     return polarToXY(angles[i], r)
   })
   const dataPath = dataPoints.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ') + ' Z'
 
   return (
     <svg width={size} height={size} style={{ overflow: 'visible' }}>
-      {/* Grid rings */}
       {rings.map(r => {
         const pts = angles.map(a => polarToXY(a, (r / 10) * maxR))
         const path = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ') + ' Z'
         return (
-          <path
-            key={r}
-            d={path}
-            fill="none"
-            stroke="var(--border)"
-            strokeWidth="1"
-            opacity={0.6}
-          />
+          <path key={r} d={path} fill="none" stroke="var(--border)" strokeWidth="1" opacity={0.6} />
         )
       })}
 
-      {/* Spokes */}
       {angles.map((angle, i) => {
         const outer = polarToXY(angle, maxR)
         return (
-          <line
-            key={i}
-            x1={cx} y1={cy}
-            x2={outer.x} y2={outer.y}
-            stroke="var(--border)"
-            strokeWidth="1"
-          />
+          <line key={i} x1={cx} y1={cy} x2={outer.x} y2={outer.y} stroke="var(--border)" strokeWidth="1" />
         )
       })}
 
-      {/* Data polygon fill */}
       <path d={dataPath} fill="var(--captech-blue)" fillOpacity={0.12} stroke="var(--captech-blue)" strokeWidth="2" />
 
-      {/* Data points */}
       {dataPoints.map((p, i) => (
         <circle key={i} cx={p.x} cy={p.y} r="4" fill="var(--captech-blue)" />
       ))}
 
-      {/* Labels */}
-      {DIM_IDS.map((id, i) => {
+      {AREA_IDS.map((id, i) => {
         const labelR = maxR + 24
         const pos = polarToXY(angles[i], labelR)
+        const val = values[i]
         const meta = DIMENSION_META[id]
-        const val = averages[id]
         return (
           <g key={id}>
             <text
               x={pos.x} y={pos.y - 4}
               textAnchor="middle"
-              fontSize="10"
+              fontSize="11"
               fontWeight="600"
               fill="var(--text-secondary)"
               fontFamily="Inter, sans-serif"
             >
-              {meta?.shortName ?? id}
+              {meta?.name ?? id}
             </text>
-            {val !== undefined && (
+            {val > 0 && (
               <text
                 x={pos.x} y={pos.y + 10}
                 textAnchor="middle"
@@ -107,7 +98,7 @@ function RadarChart({ averages }: { averages: Record<string, number> }) {
                 fill={scoreColor(val)}
                 fontFamily="Inter, sans-serif"
               >
-                {val}
+                {val.toFixed(1)}
               </text>
             )}
           </g>
@@ -117,238 +108,303 @@ function RadarChart({ averages }: { averages: Record<string, number> }) {
   )
 }
 
-function TierProgress({
-  tier,
-  challenges,
-  getProgress,
-}: {
-  tier: 'beginner' | 'intermediate' | 'advanced'
-  challenges: typeof CHALLENGES
-  getProgress: (id: string) => { best_score: number; attempts: number; has_gold?: boolean; gold?: boolean } | null | undefined
-}) {
-  const cfg = {
-    beginner: { label: 'Beginner', color: 'var(--tier-beginner)', bg: '#eff6ff' },
-    intermediate: { label: 'Intermediate', color: 'var(--tier-intermediate)', bg: '#f5f3ff' },
-    advanced: { label: 'Advanced', color: 'var(--tier-advanced)', bg: '#fffbeb' },
-  }[tier]
-
-  const tierChallenges = challenges.filter(c => c.tier === tier)
-  const passed = tierChallenges.filter(c => (getProgress(c.id)?.best_score ?? 0) >= 75).length
-  const gold = tierChallenges.filter(c => (getProgress(c.id) as any)?.gold).length
-  const pct = Math.round((passed / tierChallenges.length) * 100)
-
-  return (
-    <div style={{
-      background: 'var(--bg-card)', border: '1px solid var(--border)',
-      borderRadius: 'var(--radius-lg)', padding: '20px',
-      boxShadow: 'var(--shadow-card)',
-    }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-        <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)' }}>
-          {cfg.label}
-        </span>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          {gold > 0 && (
-            <span style={{ fontSize: '12px', color: 'var(--accent-gold)' }}>⭐ {gold}</span>
-          )}
-          <span style={{
-            fontSize: '12px', fontWeight: 700, color: cfg.color,
-            background: cfg.bg, padding: '2px 8px',
-            borderRadius: 'var(--radius-full)',
-          }}>
-            {passed}/{tierChallenges.length}
-          </span>
-        </div>
-      </div>
-      <div style={{
-        height: '8px', background: 'var(--bg-secondary)',
-        borderRadius: 'var(--radius-full)', overflow: 'hidden',
-      }}>
-        <div style={{
-          height: '100%', width: `${pct}%`,
-          background: cfg.color,
-          borderRadius: 'var(--radius-full)',
-          transition: 'width 1s ease',
-        }} />
-      </div>
-      <div style={{ marginTop: '6px', fontSize: '11px', color: 'var(--text-muted)' }}>
-        {pct}% complete
-      </div>
-    </div>
-  )
-}
-
 export function ProgressDashboard() {
   const navigate = useNavigate()
-  const { dimensionAverages, stats, getProgress, clearAll } = useProgress()
+  const { dimensionAverages, stats, getProgress, clearAll, badges, xpTotal, xpEvents } = useProgress()
 
   const averages = dimensionAverages()
   const appStats = stats()
   const hasData = appStats.totalAttempts > 0
 
-  const avgScore = appStats.totalAttempts > 0
-    ? Math.round(
-        Object.values(averages).reduce((a, b) => a + b, 0) /
-        Math.max(Object.values(averages).length, 1) * 10
-      )
-    : 0
-
-  // Best and worst dimensions
-  const dimEntries = DIM_IDS
+  const areaEntries = AREA_IDS
     .filter(id => averages[id] !== undefined)
     .map(id => ({ id, score: averages[id], meta: DIMENSION_META[id] }))
-    .sort((a, b) => b.score - a.score)
 
-  const tiers: Array<'beginner' | 'intermediate' | 'advanced'> = ['beginner', 'intermediate', 'advanced']
+  const avgScore = areaEntries.length > 0
+    ? Math.round((areaEntries.reduce((s, e) => s + e.score, 0) / areaEntries.length) * 10)
+    : 0
+
+  const sortedAreas = [...areaEntries].sort((a, b) => b.score - a.score)
+
+  const xpByReason = xpEvents.reduce<Record<string, { count: number; amount: number }>>((acc, ev) => {
+    const key = ev.reason
+    if (!acc[key]) acc[key] = { count: 0, amount: 0 }
+    acc[key].count += 1
+    acc[key].amount += ev.amount
+    return acc
+  }, {})
 
   return (
-    <div style={{ maxWidth: '900px', margin: '0 auto', padding: '48px 24px' }}>
-      {/* Page header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '36px' }}>
-        <div>
-          <h1 style={{ fontSize: '28px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '8px' }}>
-            Your Progress
-          </h1>
-          <div style={{ width: '40px', height: '3px', background: 'var(--accent-gold)', borderRadius: '2px' }} />
-        </div>
-        {hasData && (
-          <button
+    <div className="pc-progress-page" style={{ maxWidth: '900px', margin: '0 auto', padding: '48px 24px' }}>
+      <style>{`
+        @media (max-width: 720px) {
+          .pc-progress-page { padding: 24px 16px !important; }
+          .pc-progress-main-grid { grid-template-columns: 1fr !important; }
+          .pc-progress-stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
+        }
+      `}</style>
+
+      <Leaderboard />
+
+      <PageHeader
+        title="Your Progress"
+        subtitle="How you're doing across the five areas and all ten challenges."
+        right={hasData ? (
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={() => {
               if (window.confirm('Reset all progress? This cannot be undone.')) {
                 clearAll()
               }
             }}
-            style={{
-              fontSize: '12px', color: 'var(--text-muted)',
-              background: 'none', border: '1px solid var(--border)',
-              borderRadius: 'var(--radius-md)', padding: '6px 12px',
-              cursor: 'pointer',
-            }}
           >
-            Reset Progress
-          </button>
-        )}
-      </div>
+            Reset progress
+          </Button>
+        ) : null}
+      />
 
       {!hasData ? (
-        /* Empty state */
-        <div style={{
-          textAlign: 'center', padding: '80px 24px',
-          background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)',
-          border: '1px solid var(--border)', boxShadow: 'var(--shadow-card)',
-        }}>
-          <div style={{ fontSize: '48px', marginBottom: '16px' }}>📊</div>
-          <h2 style={{ fontSize: '20px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '8px' }}>
+        <Card padding={64} style={{ textAlign: 'center' }}>
+          <div style={{ color: 'var(--ink-4)', marginBottom: '16px', display: 'inline-flex' }}>
+            <Icon.Chart size={42} />
+          </div>
+          <h2 style={{ fontSize: 'var(--fs-h1)', marginBottom: '8px' }}>
             No attempts yet
           </h2>
-          <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '24px' }}>
-            Complete some challenges to see your dimension scores and tier progress here.
+          <p style={{ fontSize: 'var(--fs-body)', color: 'var(--ink-3)', marginBottom: '24px' }}>
+            Complete some challenges to see your area scores and challenge progress here.
           </p>
-          <button
-            onClick={() => navigate('/')}
-            style={{
-              background: 'var(--captech-blue)', color: '#fff',
-              border: 'none', borderRadius: 'var(--radius-md)',
-              padding: '10px 22px', fontSize: '14px', fontWeight: 600,
-              cursor: 'pointer',
-            }}
-          >
-            Start Training →
-          </button>
-        </div>
+          <Button onClick={() => navigate('/')} iconRight={<Icon.ArrowRight size={15} />}>
+            Start Training
+          </Button>
+        </Card>
       ) : (
         <>
-          {/* Overview stats */}
-          <div style={{
-            display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+          <div className="pc-progress-stats-grid" style={{
+            display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
             gap: '12px', marginBottom: '32px',
           }}>
-            {[
-              { label: 'Challenges Passed', value: `${appStats.passed}/${appStats.total}`, sub: 'of 18' },
-              { label: 'Gold Stars', value: `${appStats.gold} ⭐`, sub: 'scored ≥90' },
-              { label: 'Total Attempts', value: appStats.totalAttempts, sub: 'submissions' },
-              { label: 'Avg Dimension', value: `${avgScore}/10`, sub: 'overall' },
-            ].map(s => (
-              <div key={s.label} style={{
-                background: 'var(--bg-card)', border: '1px solid var(--border)',
-                borderRadius: 'var(--radius-lg)', padding: '16px 18px',
-                boxShadow: 'var(--shadow-card)',
-              }}>
-                <div style={{ fontSize: '22px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                  {s.value}
-                </div>
-                <div style={{ fontSize: '12px', color: 'var(--text-primary)', fontWeight: 600, marginTop: '2px' }}>
-                  {s.label}
-                </div>
-                <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{s.sub}</div>
-              </div>
-            ))}
+            <StatCard
+              label="XP Earned"
+              value={xpTotal}
+              sub={<span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                <Icon.Zap size={12} /> total
+              </span>}
+              accent="gold"
+            />
+            <StatCard label="Challenges Passed" value={`${appStats.passed}/${appStats.total}`} sub={`of ${appStats.total}`} />
+            <StatCard
+              label="Gold Stars"
+              value={appStats.gold}
+              sub={<span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                <Icon.Trophy size={12} /> scored ≥90
+              </span>}
+            />
+            <StatCard label="Total Attempts" value={appStats.totalAttempts} sub="submissions" />
+            <StatCard label="Avg Score" value={`${avgScore}/10`} sub="across areas" />
           </div>
 
-          {/* Main content: radar + tier progress */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '32px', alignItems: 'start' }}>
-            {/* Radar chart */}
-            <div style={{
-              background: 'var(--bg-card)', border: '1px solid var(--border)',
-              borderRadius: 'var(--radius-lg)', padding: '28px',
-              boxShadow: 'var(--shadow-card)',
-            }}>
-              <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '20px' }}>
-                Dimension Radar
+          {/* Badges */}
+          <div style={{ marginBottom: '32px' }}>
+            <h3 style={{ fontSize: 'var(--fs-h2)', marginBottom: '12px' }}>
+              Badges
+            </h3>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+                gap: '12px',
+              }}
+            >
+              {Object.entries(badges).map(([bid, b]) => {
+                const pct = Math.min(100, Math.round((b.progress.current / Math.max(b.progress.target, 1)) * 100))
+                const IconComp = BADGE_ICONS[bid] ?? Icon.Trophy
+                return (
+                  <Card
+                    key={bid}
+                    accent={b.earned ? 'gold' : 'none'}
+                    padding={16}
+                    style={{ opacity: b.earned ? 1 : 0.92 }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+                      <span style={{ color: b.earned ? 'var(--captech-yellow)' : 'var(--ink-4)', display: 'inline-flex' }}>
+                        <IconComp size={20} />
+                      </span>
+                      <span style={{ fontSize: 'var(--fs-body)', fontWeight: 'var(--fw-bold)', color: 'var(--ink)' }}>
+                        {b.label}
+                      </span>
+                      {b.earned && (
+                        <span style={{
+                          marginLeft: 'auto',
+                          fontSize: 'var(--fs-micro)',
+                          color: 'var(--score-high)',
+                          fontWeight: 'var(--fw-bold)',
+                          letterSpacing: '0.08em',
+                        }}>
+                          EARNED
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ fontSize: 'var(--fs-small)', color: 'var(--ink-3)', marginBottom: '10px', lineHeight: 1.5 }}>
+                      {b.description}
+                    </div>
+                    <div style={{ height: '6px', background: 'var(--surface-quiet)', borderRadius: 'var(--radius-full)', overflow: 'hidden' }}>
+                      <div style={{
+                        height: '100%', width: `${pct}%`,
+                        background: b.earned ? 'var(--captech-yellow)' : 'var(--captech-blue)',
+                        transition: 'width 0.8s ease',
+                      }} />
+                    </div>
+                    <div style={{ marginTop: '6px', fontSize: 'var(--fs-micro)', color: 'var(--ink-3)' }}>
+                      {b.progress.current} / {b.progress.target}
+                    </div>
+                  </Card>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* XP breakdown */}
+          {Object.keys(xpByReason).length > 0 && (
+            <Card padding={20} style={{ marginBottom: '32px' }}>
+              <h3 style={{ fontSize: 'var(--fs-h2)', marginBottom: '12px' }}>
+                XP Breakdown
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {Object.entries(xpByReason)
+                  .sort((a, b) => b[1].amount - a[1].amount)
+                  .map(([reason, { count, amount }]) => (
+                    <div
+                      key={reason}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        fontSize: 'var(--fs-small)',
+                      }}
+                    >
+                      <span style={{ color: 'var(--ink)' }}>
+                        {XP_REASON_LABELS[reason] || reason}
+                        <span style={{ color: 'var(--ink-3)', marginLeft: '6px' }}>× {count}</span>
+                      </span>
+                      <span style={{
+                        color: 'var(--captech-navy)',
+                        fontWeight: 'var(--fw-bold)',
+                        fontVariantNumeric: 'tabular-nums',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                      }}>
+                        <Icon.Zap size={13} />
+                        +{amount}
+                      </span>
+                    </div>
+                  ))}
+              </div>
+            </Card>
+          )}
+
+          {/* Radar + challenge list */}
+          <div className="pc-progress-main-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '32px', alignItems: 'start' }}>
+            <Card padding={24}>
+              <h3 style={{ fontSize: 'var(--fs-h2)', marginBottom: '20px' }}>
+                Your Five Areas
               </h3>
               <div style={{ display: 'flex', justifyContent: 'center' }}>
                 <RadarChart averages={averages} />
               </div>
-            </div>
+            </Card>
 
-            {/* Tier progress */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px' }}>
-                Tier Progress
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <h3 style={{ fontSize: 'var(--fs-h2)', marginBottom: '4px' }}>
+                Challenge Progress
               </h3>
-              {tiers.map(tier => (
-                <TierProgress
-                  key={tier}
-                  tier={tier}
-                  challenges={CHALLENGES}
-                  getProgress={id => {
-                    const p = getProgress(id)
-                    return p ? { best_score: p.best_score, attempts: p.attempts.length, gold: p.gold } : null
-                  }}
-                />
-              ))}
+              <Card padding={16}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {CHALLENGES.map((c, idx) => {
+                    const p = getProgress(c.id)
+                    const best = p?.best_score ?? 0
+                    const passed = best >= 75
+                    const gold = best >= 90
+                    return (
+                      <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: 'var(--fs-small)' }}>
+                        <span style={{
+                          fontSize: 'var(--fs-micro)', fontWeight: 'var(--fw-semi)',
+                          color: 'var(--ink-4)', width: '22px', flexShrink: 0,
+                        }}>
+                          {String(idx + 1).padStart(2, '0')}
+                        </span>
+                        <span style={{
+                          flex: 1, minWidth: 0, color: 'var(--ink)',
+                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                        }}>
+                          {c.title}
+                        </span>
+                        {best > 0 ? (
+                          <span style={{
+                            fontSize: 'var(--fs-micro)',
+                            fontWeight: 'var(--fw-bold)',
+                            color: scoreColor(best, true),
+                            fontVariantNumeric: 'tabular-nums',
+                          }}>
+                            {best}
+                            {gold && <Icon.Trophy size={11} style={{ marginLeft: 4, verticalAlign: 'text-top', color: 'var(--accent-gold)' }} />}
+                            {passed && !gold && <Icon.CheckCircle size={11} style={{ marginLeft: 4, verticalAlign: 'text-top', color: 'var(--score-high)' }} />}
+                          </span>
+                        ) : (
+                          <span style={{ fontSize: 'var(--fs-micro)', color: 'var(--ink-4)' }}>—</span>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </Card>
             </div>
           </div>
 
-          {/* Dimension breakdown table */}
-          {dimEntries.length > 0 && (
-            <div style={{
-              background: 'var(--bg-card)', border: '1px solid var(--border)',
-              borderRadius: 'var(--radius-lg)', padding: '24px 28px',
-              boxShadow: 'var(--shadow-card)', marginBottom: '32px',
-            }}>
-              <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '20px' }}>
-                Dimension Averages
+          {/* Area averages (detailed) */}
+          {sortedAreas.length > 0 && (
+            <Card padding={24} style={{ marginBottom: '32px' }}>
+              <h3 style={{ fontSize: 'var(--fs-h2)', marginBottom: '8px' }}>
+                Area Averages
               </h3>
+              <p style={{ fontSize: 'var(--fs-small)', color: 'var(--ink-3)', marginBottom: '16px' }}>
+                Scored across all your training attempts.
+              </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                {dimEntries.map(({ id, score, meta }, i) => (
+                {sortedAreas.map(({ id, score, meta }, i) => (
                   <div key={id}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        {i === 0 && <span style={{ fontSize: '11px' }}>🏆</span>}
-                        {i === dimEntries.length - 1 && dimEntries.length > 1 && (
-                          <span style={{ fontSize: '11px' }}>📈</span>
+                        {i === 0 && (
+                          <span style={{ color: 'var(--captech-yellow)', display: 'inline-flex' }}>
+                            <Icon.Trophy size={13} />
+                          </span>
                         )}
-                        <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                        {i === sortedAreas.length - 1 && sortedAreas.length > 1 && (
+                          <span style={{ color: 'var(--score-mid)', display: 'inline-flex' }}>
+                            <Icon.Trend size={13} />
+                          </span>
+                        )}
+                        <span style={{ fontSize: 'var(--fs-small)', fontWeight: 'var(--fw-semi)', color: 'var(--ink)' }}>
                           {meta?.name ?? id}
                         </span>
+                        <span style={{ fontSize: 'var(--fs-micro)', color: 'var(--ink-3)' }}>
+                          — {meta?.description}
+                        </span>
                       </div>
-                      <span style={{ fontSize: '13px', fontWeight: 700, color: scoreColor(score) }}>
-                        {score}/10
+                      <span style={{
+                        fontSize: 'var(--fs-small)',
+                        fontWeight: 'var(--fw-bold)',
+                        color: scoreColor(score),
+                        fontVariantNumeric: 'tabular-nums',
+                      }}>
+                        {score.toFixed(1)}/10
                       </span>
                     </div>
                     <div style={{
-                      height: '6px', background: 'var(--bg-secondary)',
+                      height: '6px', background: 'var(--surface-quiet)',
                       borderRadius: 'var(--radius-full)', overflow: 'hidden',
                     }}>
                       <div style={{
@@ -358,41 +414,24 @@ export function ProgressDashboard() {
                         transition: 'width 1s ease',
                       }} />
                     </div>
-                    {i === dimEntries.length - 1 && (
-                      <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
-                        Focus area — this dimension needs the most work.
+                    {i === sortedAreas.length - 1 && sortedAreas.length > 1 && (
+                      <p style={{ fontSize: 'var(--fs-micro)', color: 'var(--ink-3)', marginTop: '4px' }}>
+                        Focus here — this area needs the most work.
                       </p>
                     )}
                   </div>
                 ))}
               </div>
-            </div>
+            </Card>
           )}
 
-          {/* CTA to continue */}
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-            <button
-              onClick={() => navigate('/')}
-              style={{
-                background: 'var(--captech-blue)', color: '#fff',
-                border: 'none', borderRadius: 'var(--radius-md)',
-                padding: '10px 22px', fontSize: '14px', fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
-              Continue Training →
-            </button>
-            <button
-              onClick={() => navigate('/practice')}
-              style={{
-                background: 'none', color: 'var(--text-primary)',
-                border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
-                padding: '10px 22px', fontSize: '14px', fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
+            <Button onClick={() => navigate('/')} iconRight={<Icon.ArrowRight size={15} />}>
+              Continue Training
+            </Button>
+            <Button variant="secondary" onClick={() => navigate('/practice')}>
               Free Practice
-            </button>
+            </Button>
           </div>
         </>
       )}

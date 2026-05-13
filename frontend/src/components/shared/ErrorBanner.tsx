@@ -1,3 +1,5 @@
+import { Icon } from '@/components/shared/Icon'
+
 interface ErrorBannerProps {
   message: string
   onDismiss?: () => void
@@ -5,32 +7,41 @@ interface ErrorBannerProps {
 
 export function ErrorBanner({ message, onDismiss }: ErrorBannerProps) {
   const isAuth = message.toLowerCase().includes('aws') || message.toLowerCase().includes('credential')
+  const IconComp = isAuth ? Icon.Key : Icon.Alert
+  const accent = isAuth ? 'var(--score-mid)' : 'var(--score-low)'
+  const bg = isAuth ? 'var(--score-mid-bg)' : 'var(--score-low-bg)'
 
   return (
     <div style={{
-      background: isAuth ? 'var(--score-mid-bg)' : 'var(--score-low-bg)',
-      border: `1px solid ${isAuth ? 'var(--score-mid)' : 'var(--score-low)'}`,
+      background: bg,
+      border: `1px solid ${accent}`,
       borderRadius: 'var(--radius-md)',
-      padding: '16px 20px',
+      padding: '14px 18px',
       display: 'flex',
       alignItems: 'flex-start',
       gap: '12px',
     }}>
-      <span style={{ fontSize: '18px', flexShrink: 0 }}>{isAuth ? '🔐' : '⚠️'}</span>
+      <span style={{ color: accent, flexShrink: 0, display: 'inline-flex', marginTop: '1px' }}>
+        <IconComp size={18} />
+      </span>
       <div style={{ flex: 1 }}>
-        <p style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text-primary)', marginBottom: '4px' }}>
+        <p style={{ fontWeight: 'var(--fw-semi)', fontSize: 'var(--fs-body)', color: 'var(--ink)', marginBottom: '4px' }}>
           {isAuth ? 'Authentication Required' : 'Something went wrong'}
         </p>
-        <p style={{ fontSize: '13px', color: 'var(--text-secondary)', fontFamily: isAuth ? 'var(--font-mono)' : undefined }}>
+        <p style={{ fontSize: 'var(--fs-small)', color: 'var(--ink-2)', fontFamily: isAuth ? 'var(--font-mono)' : undefined }}>
           {message}
         </p>
       </div>
       {onDismiss && (
         <button
           onClick={onDismiss}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '18px', lineHeight: 1 }}
+          aria-label="Dismiss"
+          style={{
+            background: 'none', border: 'none', cursor: 'pointer',
+            color: 'var(--ink-3)', display: 'inline-flex', padding: '2px',
+          }}
         >
-          ×
+          <Icon.Close size={16} />
         </button>
       )}
     </div>

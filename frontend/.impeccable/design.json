@@ -1,0 +1,171 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-05-12T00:00:00Z",
+  "title": "Design System: Prompt Coach",
+  "extensions": {
+    "colorMeta": {
+      "captech-blue": {
+        "role": "primary",
+        "displayName": "CapTech Blue",
+        "canonical": "oklch(51% 0.18 256)",
+        "tonalRamp": ["#0F1F3A", "#0C2E5E", "#0A3E84", "#064FA9", "#005DB9", "#2E7CC8", "#6BA3D8", "#BDD7EF"]
+      },
+      "captech-navy": {
+        "role": "primary",
+        "displayName": "CapTech Navy",
+        "canonical": "oklch(36% 0.13 258)",
+        "tonalRamp": ["#020A17", "#051734", "#0B254E", "#163669", "#003865", "#305A8A", "#6282AE", "#BCCADB"]
+      },
+      "captech-yellow": {
+        "role": "secondary",
+        "displayName": "CapTech Yellow",
+        "canonical": "oklch(91% 0.19 95)",
+        "tonalRamp": ["#4A3D00", "#6F5C00", "#937900", "#C09E00", "#E0BA00", "#FDDA24", "#FEE877", "#FFFBE6"]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "oklch(23% 0.03 260)",
+        "tonalRamp": ["#0F172A", "#1F293E", "#334155", "#4B5A72", "#64748B", "#94A3B8", "#CBD5E1", "#E3E8EF"]
+      },
+      "page": {
+        "role": "neutral",
+        "displayName": "Page Gray",
+        "canonical": "oklch(97% 0.005 258)",
+        "tonalRamp": ["#D8DEE6", "#E3E8EF", "#EDF1F5", "#F4F6F9", "#F6F8FA", "#F9FBFD", "#FCFDFE", "#FFFFFF"]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display 32", "purpose": "Page heroes: PageHeader title, login H1, Progress top." },
+      "headline": { "displayName": "Headline 24", "purpose": "Compact page titles; ChallengeView title; projector leaderboard title." },
+      "title": { "displayName": "Card Title 18", "purpose": "Card section headings; facilitator theme names." },
+      "body": { "displayName": "Body 14", "purpose": "Default prose and card content; ~70ch max line length." },
+      "label": { "displayName": "Micro Label 11", "purpose": "Uppercase eyebrow labels and EARNED tags; 0.08em tracking." }
+    },
+    "shadows": [
+      { "name": "card", "value": "0 1px 2px rgba(15, 23, 42, 0.05)", "purpose": "Default card at hover. Near-invisible; signals pickup." },
+      { "name": "card-hover", "value": "0 2px 6px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04)", "purpose": "Interactive card hover and actively-pulsing leaderboard row." },
+      { "name": "elevated", "value": "0 8px 24px rgba(15, 23, 42, 0.10)", "purpose": "Floating elements only: login card, badge toast, XP floater." }
+    ],
+    "motion": [
+      { "name": "ease-out", "value": "cubic-bezier(0.22, 1, 0.36, 1)", "purpose": "Default exponential ease-out for state transitions." },
+      { "name": "duration-fast", "value": "150ms", "purpose": "Hover color shifts, border transitions." },
+      { "name": "duration-med", "value": "300ms", "purpose": "Card enter animations, toast slide-ins." },
+      { "name": "duration-pulse", "value": "1100ms", "purpose": "Leaderboard row rank-change pulse." },
+      { "name": "duration-floater", "value": "1800ms", "purpose": "XP floater rise-and-fade." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px", "purpose": "Mobile / small viewport. Header wraps, grids collapse to 1 column, some densities ease." },
+      { "name": "md", "value": "720px", "purpose": "Tablet / narrow laptop. Progress main-grid collapses to 1 column." }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Carries every forward action (Start Training, Continue, Submit, Next Challenge).",
+      "html": "<button class=\"ds-btn-primary\">Start Training <svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" width=\"15\" height=\"15\"><path d=\"M5 12h14M13 5l7 7-7 7\"/></svg></button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 36px; padding: 8px 16px; font-family: 'canada-type-gibson', 'Gibson', 'Helvetica Neue', Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 1; background: #005DB9; color: #FFFFFF; border: 1px solid #005DB9; border-radius: 6px; cursor: pointer; transition: background-color 150ms cubic-bezier(0.22,1,0.36,1), border-color 150ms cubic-bezier(0.22,1,0.36,1); } .ds-btn-primary:hover { background: #003865; border-color: #003865; } .ds-btn-primary:focus-visible { outline: 2px solid #005DB9; outline-offset: 2px; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Co-equal or dismissive actions (Reset progress, Back to Level Map, View toggles).",
+      "html": "<button class=\"ds-btn-secondary\">Free Practice</button>",
+      "css": ".ds-btn-secondary { display: inline-flex; align-items: center; justify-content: center; min-height: 36px; padding: 8px 16px; font-family: 'canada-type-gibson', 'Gibson', 'Helvetica Neue', Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 1; background: #FFFFFF; color: #005DB9; border: 1px solid #E3E8EF; border-radius: 6px; cursor: pointer; transition: border-color 150ms cubic-bezier(0.22,1,0.36,1); } .ds-btn-secondary:hover { border-color: #005DB9; } .ds-btn-secondary:focus-visible { outline: 2px solid #005DB9; outline-offset: 2px; }"
+    },
+    {
+      "name": "XP Pill",
+      "kind": "chip",
+      "refersTo": "xp-pill",
+      "description": "The scarce yellow on any screen. Sits next to the brand wordmark in the header, showing current XP.",
+      "html": "<span class=\"ds-xp-pill\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" width=\"13\" height=\"13\"><polygon points=\"13 2 3 14 12 14 11 22 21 10 12 10 13 2\"/></svg>247</span>",
+      "css": ".ds-xp-pill { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; font-family: 'canada-type-gibson', 'Gibson', 'Helvetica Neue', Arial, sans-serif; font-size: 13px; font-weight: 700; line-height: 1; background: #FDDA24; color: #003865; border-radius: 9999px; }"
+    },
+    {
+      "name": "Default Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Workhorse container on white. Flat at rest; no shadow until hover.",
+      "html": "<div class=\"ds-card\"><div class=\"ds-card-eyebrow\">CHALLENGE 3 OF 10</div><h2 class=\"ds-card-title\">Give it a role</h2><p class=\"ds-card-body\">Assigning the AI a specific professional role shapes vocabulary, depth, and tone.</p></div>",
+      "css": ".ds-card { background: #FFFFFF; border: 1px solid #E3E8EF; border-radius: 8px; padding: 20px; transition: box-shadow 150ms cubic-bezier(0.22,1,0.36,1); } .ds-card:hover { box-shadow: 0 1px 2px rgba(15,23,42,0.05); } .ds-card-eyebrow { font-family: 'canada-type-gibson', 'Gibson', 'Helvetica Neue', Arial, sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #64748B; margin-bottom: 6px; } .ds-card-title { font-family: 'canada-type-gibson', 'Gibson', 'Helvetica Neue', Arial, sans-serif; font-size: 18px; font-weight: 600; line-height: 1.3; color: #0F172A; margin: 0 0 8px; } .ds-card-body { font-family: 'canada-type-gibson', 'Gibson', 'Helvetica Neue', Arial, sans-serif; font-size: 14px; line-height: 1.55; color: #334155; margin: 0; }"
+    },
+    {
+      "name": "Quiet Card",
+      "kind": "card",
+      "refersTo": "card-quiet",
+      "description": "Dense, borderless surface for repeated content. Used for facilitator response quotes and XP-breakdown rows.",
+      "html": "<div class=\"ds-card-quiet\"><div class=\"ds-card-eyebrow\">DEMO_LOGAN</div><div class=\"ds-card-quiet-body\">“Writing first drafts of status updates and weekly reports.”</div></div>",
+      "css": ".ds-card-quiet { background: #F4F6F9; border-radius: 8px; padding: 10px; } .ds-card-quiet .ds-card-eyebrow { font-family: 'canada-type-gibson', 'Gibson', 'Helvetica Neue', Arial, sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #64748B; margin-bottom: 4px; } .ds-card-quiet-body { font-family: 'canada-type-gibson', 'Gibson', 'Helvetica Neue', Arial, sans-serif; font-size: 13px; line-height: 1.4; color: #0F172A; }"
+    },
+    {
+      "name": "Stat Tile",
+      "kind": "custom",
+      "description": "The Progress dashboard metric tile: 11px eyebrow, 26px bold value, 13px sub-line. Optional gold left-border marks the headline stat.",
+      "html": "<div class=\"ds-stat ds-stat--gold\"><div class=\"ds-stat-label\">XP Earned</div><div class=\"ds-stat-value\">247</div><div class=\"ds-stat-sub\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" width=\"12\" height=\"12\"><polygon points=\"13 2 3 14 12 14 11 22 21 10 12 10 13 2\"/></svg>total</div></div>",
+      "css": ".ds-stat { background: #FFFFFF; border: 1px solid #E3E8EF; border-radius: 8px; padding: 18px; } .ds-stat--gold { border-left: 4px solid #FDDA24; } .ds-stat-label { font-family: 'canada-type-gibson', 'Gibson', 'Helvetica Neue', Arial, sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #64748B; margin-bottom: 8px; } .ds-stat-value { font-family: 'canada-type-gibson', 'Gibson', 'Helvetica Neue', Arial, sans-serif; font-size: 26px; font-weight: 700; line-height: 1.1; color: #0F172A; } .ds-stat-sub { display: inline-flex; align-items: center; gap: 4px; margin-top: 4px; font-family: 'canada-type-gibson', 'Gibson', 'Helvetica Neue', Arial, sans-serif; font-size: 13px; color: #64748B; }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "16px font-size is mandatory to prevent iOS Safari zoom during live events. Focus transitions border to CapTech Blue.",
+      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"e.g. nick or nick_j\" />",
+      "css": ".ds-input { width: 100%; padding: 10px 12px; font-family: 'canada-type-gibson', 'Gibson', 'Helvetica Neue', Arial, sans-serif; font-size: 16px; color: #0F172A; background: #FFFFFF; border: 1px solid #E3E8EF; border-radius: 6px; outline: none; box-sizing: border-box; transition: border-color 150ms cubic-bezier(0.22,1,0.36,1); } .ds-input::placeholder { color: #94A3B8; } .ds-input:focus-visible { border-color: #005DB9; }"
+    },
+    {
+      "name": "Top Nav",
+      "kind": "nav",
+      "description": "White sticky header with 1px bottom border. Brand cluster left, nav right. Active route is a 2px CapTech Blue underline, not a pill.",
+      "html": "<nav class=\"ds-nav\"><div class=\"ds-nav-brand\"><span class=\"ds-nav-brand-name\">Prompt Coach</span><span class=\"ds-nav-xp\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" width=\"13\" height=\"13\"><polygon points=\"13 2 3 14 12 14 11 22 21 10 12 10 13 2\"/></svg>247</span></div><div class=\"ds-nav-links\"><button class=\"ds-nav-link ds-nav-link--active\">Training</button><button class=\"ds-nav-link\">Practice</button><button class=\"ds-nav-link\">Progress</button></div></nav>",
+      "css": ".ds-nav { display: flex; align-items: center; justify-content: space-between; padding: 0 24px; height: 60px; background: #FFFFFF; border-bottom: 1px solid #E3E8EF; font-family: 'canada-type-gibson', 'Gibson', 'Helvetica Neue', Arial, sans-serif; } .ds-nav-brand { display: flex; align-items: center; gap: 10px; } .ds-nav-brand-name { font-size: 18px; font-weight: 700; color: #0F172A; letter-spacing: -0.01em; } .ds-nav-xp { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; font-size: 13px; font-weight: 700; line-height: 1; background: #FDDA24; color: #003865; border-radius: 9999px; } .ds-nav-links { display: flex; gap: 4px; } .ds-nav-link { position: relative; background: none; border: none; padding: 18px 10px; font-family: inherit; font-size: 13px; font-weight: 400; color: #64748B; cursor: pointer; min-height: 44px; transition: color 150ms cubic-bezier(0.22,1,0.36,1); } .ds-nav-link:hover { color: #0F172A; } .ds-nav-link--active { color: #0F172A; font-weight: 600; } .ds-nav-link--active::after { content: ''; position: absolute; left: 10px; right: 10px; bottom: 0; height: 2px; background: #005DB9; border-radius: 2px 2px 0 0; }"
+    },
+    {
+      "name": "Leaderboard Row (You)",
+      "kind": "custom",
+      "description": "Attendee leaderboard row variant with a 4px CapTech Blue left-border and faint blue wash. The blue stripe is the only legal structural stripe in the system.",
+      "html": "<div class=\"ds-lb-row ds-lb-row--you\"><div class=\"ds-lb-rank\">7</div><div class=\"ds-lb-identity\"><div class=\"ds-lb-name\">scott (you)</div><div class=\"ds-lb-sub\">4 passed</div></div><div class=\"ds-lb-xp\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" width=\"13\" height=\"13\"><polygon points=\"13 2 3 14 12 14 11 22 21 10 12 10 13 2\"/></svg>125</div></div>",
+      "css": ".ds-lb-row { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-top: 1px solid #E3E8EF; border-left: 4px solid transparent; background: transparent; font-family: 'canada-type-gibson', 'Gibson', 'Helvetica Neue', Arial, sans-serif; } .ds-lb-row--you { border-left-color: #005DB9; background: rgba(0, 93, 185, 0.04); } .ds-lb-rank { width: 28px; text-align: right; font-size: 14px; font-weight: 700; color: #94A3B8; font-variant-numeric: tabular-nums; } .ds-lb-identity { flex: 1; min-width: 0; } .ds-lb-name { font-size: 14px; font-weight: 700; color: #0F172A; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .ds-lb-sub { font-size: 11px; color: #64748B; } .ds-lb-xp { display: inline-flex; align-items: center; gap: 4px; font-size: 14px; font-weight: 700; color: #003865; font-variant-numeric: tabular-nums; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Briefing Room",
+    "overview": "Prompt Coach is designed as if a senior consultant is briefing a room from a projector while every attendee follows along on their own device. The interface is dense without being cluttered, confident without being loud, and optimized for two vantage points: a laptop at arm's length and a projection screen at the back of a room. White surfaces, near-black ink for reading weight, CapTech blue carrying the chrome, CapTech yellow reserved for the one thing on any given screen worth drawing the eye to. The system rejects dark mode, neon, chat-bubble UI, hero-metric templates, and identical card grids. It also rejects cartoon mascots, Duolingo green, and cheesy celebratory overlays. Gamification is in the brand palette, or it does not ship.",
+    "keyCharacteristics": [
+      "Flat surfaces at rest; shadows appear only on state change (hover, focus, leaderboard pulse).",
+      "Near-black #0F172A headings, not navy. Navy is CTAs, active states, projector hero.",
+      "Two accent hues total, both CapTech. Blue leads chrome. Yellow is the scarcest color on any screen.",
+      "Dense layouts on purpose. Facilitator shows 50+ responses or 6 ranks without scrolling; phone user completes a challenge without fighting the layout.",
+      "Animations communicate real events. If motion doesn't mark state change, it doesn't exist."
+    ],
+    "rules": [
+      { "name": "The One Spark Rule", "body": "On any given screen there is at most one yellow surface and one yellow glyph above 14px. If a new yellow appears, an old one has to earn its way out. Blue can be everywhere; yellow cannot.", "section": "colors" },
+      { "name": "The No-New-Hue Rule", "body": "Outside of research-source citation dots (Anthropic, Google, OpenAI, Meta, arXiv), we do not introduce new hues. Purples, teals, magentas, greens: prohibited unless they are a score color or a citation color.", "section": "colors" },
+      { "name": "The Single-Family Rule", "body": "One type family across the entire app. Display vs. body contrast comes from weight and size, never from family switching.", "section": "typography" },
+      { "name": "The Uppercase-Micro Rule", "body": "Any label at 11px and below is uppercase with 0.08em tracking. Any text above 11px is sentence case. The rule is binary so uppercase never leaks into reading copy.", "section": "typography" },
+      { "name": "The 16px-Input Rule", "body": "Inputs, textareas, and selects are always at least 16px. Anything smaller triggers iOS Safari's zoom-on-focus, unacceptable during a live event.", "section": "typography" },
+      { "name": "The Flat-At-Rest Rule", "body": "No default shadow on any card. Shadow is response, not aesthetic.", "section": "elevation" },
+      { "name": "The Shadow-Is-Navy Rule", "body": "All shadow RGBA uses rgba(15, 23, 42, ...) (the ink-1 base), never pure black. Black shadows look gray; ink-tinted shadows look like shadow.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do use CapTech Yellow as the scarcest color on the screen. One pill, one icon, one left-border, not three.",
+      "Do cite dimension scores with a numeric value next to the color bar. Color is never the sole signal for score state.",
+      "Do lead every challenge, every page, and every card with the Display or Headline style in --ink. Navy is for CTAs and chrome.",
+      "Do use icon + text on locked / passed / gold nodes on the challenge map. Shape communicates state alongside color.",
+      "Do keep motion curves as exponential ease-out. Row pulse, XP floater rise, confetti fade: all ease-out, no bounce.",
+      "Do respect prefers-reduced-motion on confetti, XP floaters, and leaderboard pulse. Fall back to instant state change."
+    ],
+    "donts": [
+      "Don't use side-stripe borders greater than 4px, or stripes of any color beyond --captech-yellow and --captech-blue. The two accent-left-* tokens are the only legal stripes.",
+      "Don't use gradient text, background-clip: text, or any linear-gradient fill on type anywhere. Emphasis is weight and size, never gradient.",
+      "Don't use glassmorphism, backdrop-filter blurs, or translucent cards as default chrome. The app is white cards on a gray page; that is the texture.",
+      "Don't render identical-looking card grids across multiple sections on the same page. The Progress dashboard intentionally varies; the variation IS the hierarchy.",
+      "Don't introduce dark mode, neon accents, or 'AI tool' chat-bubble layouts. AI is the subject matter, not the visual theme.",
+      "Don't ship Duolingo-style celebratory overlays. Confetti is CapTech palette, fires only on gold, runs once. Cheering animations larger than the XP pill are prohibited.",
+      "Don't introduce corporate-LMS patterns: beige-on-gray, stock photos, dense compliance forms. Keep the chrome thin; keep the content the hero.",
+      "Don't use em dashes in UI copy. Commas, colons, semicolons, or periods. Not em dash, not double hyphen."
+    ]
+  }
+}

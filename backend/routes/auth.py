@@ -1,7 +1,11 @@
 from flask import Blueprint, request, jsonify, session
-from backend.db import upsert_user
+
+from backend.common.clustering import request_cluster
+from backend.db import update_focus_response, upsert_user
 
 auth_bp = Blueprint("auth", __name__)
+
+MAX_FOCUS_LEN = 500
 
 
 @auth_bp.route("/api/auth/login", methods=["POST"])
@@ -9,15 +13,27 @@ def login():
     body = request.get_json(force=True)
     username = (body.get("username") or "").strip()
     email = (body.get("email") or "").strip().lower()
+    focus_response = (body.get("focus_response") or "").strip()
 
     if not username:
         return jsonify({"error": "username is required"}), 400
     if not email or "@" not in email:
         return jsonify({"error": "valid email is required"}), 400
+    if len(focus_response) > MAX_FOCUS_LEN:
+        return jsonify({"error": f"response exceeds {MAX_FOCUS_LEN} character limit"}), 400
 
     user = upsert_user(username, email)
     session["user_id"] = user["id"]
-    return jsonify({"id": user["id"], "username": user["username"], "email": user["email"]})
+
+    if focus_response:
+        update_focus_response(user["id"], focus_response)
+        request_cluster()
+
+    return jsonify({
+        "id": user["id"],
+        "username": user["username"],
+        "email": user["email"],
+    })
 
 
 @auth_bp.route("/api/auth/me", methods=["GET"])

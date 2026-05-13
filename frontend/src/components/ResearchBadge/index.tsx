@@ -1,11 +1,11 @@
 import type { DimensionScore } from '@/types'
 
-const SOURCE_COLORS: Record<string, string> = {
-  Anthropic: '#d97706',
-  Google:    '#1e56b0',
-  OpenAI:    '#16a34a',
-  Meta:      '#7c3aed',
-  arXiv:     '#db2777',
+const SOURCE_VARS: Record<string, string> = {
+  Anthropic: 'var(--source-anthropic)',
+  Google:    'var(--source-google)',
+  OpenAI:    'var(--source-openai)',
+  Meta:      'var(--source-meta)',
+  arXiv:     'var(--source-arxiv)',
 }
 
 interface ResearchBadgeProps {
@@ -13,31 +13,31 @@ interface ResearchBadgeProps {
 }
 
 export function ResearchBadge({ citation }: ResearchBadgeProps) {
-  const color = SOURCE_COLORS[citation.source] ?? '#64748b'
+  const color = SOURCE_VARS[citation.source] ?? 'var(--ink-3)'
   return (
     <div style={{
       marginTop: '12px',
       padding: '10px 12px',
-      background: 'var(--bg-secondary)',
-      borderRadius: 'var(--radius-sm)',
-      borderLeft: `3px solid ${color}`,
+      background: 'var(--surface-quiet)',
+      borderRadius: 'var(--radius-md)',
+      borderLeft: `4px solid ${color}`,
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
         <span style={{
-          fontSize: '11px',
-          fontWeight: 700,
+          fontSize: 'var(--fs-micro)',
+          fontWeight: 'var(--fw-bold)',
           color,
           textTransform: 'uppercase',
-          letterSpacing: '0.04em',
+          letterSpacing: '0.06em',
         }}>
           {citation.source}
         </span>
-        <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>·</span>
-        <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{citation.reference}</span>
+        <span style={{ fontSize: 'var(--fs-micro)', color: 'var(--ink-4)' }}>·</span>
+        <span style={{ fontSize: 'var(--fs-micro)', color: 'var(--ink-3)' }}>{citation.reference}</span>
       </div>
       <p style={{
-        fontSize: '12px',
-        color: 'var(--text-secondary)',
+        fontSize: 'var(--fs-small)',
+        color: 'var(--ink-2)',
         fontStyle: 'italic',
         lineHeight: 1.5,
         margin: 0,
