@@ -50,7 +50,7 @@ export function FacilitatorLeaderboard() {
     <div style={{
       minHeight: '100vh',
       background: 'var(--captech-dark-navy)',
-      color: '#fff',
+      color: 'var(--surface)',
       padding: '32px 20px',
       display: 'flex',
       flexDirection: 'column',
@@ -75,12 +75,13 @@ export function FacilitatorLeaderboard() {
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           marginBottom: '18px', flexWrap: 'wrap', gap: '12px',
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <CapTechLogo color="#fff" height={22} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <CapTechLogo color="var(--surface)" height={26} />
             <h1 className="pc-flb-title" style={{
-              fontSize: '28px', fontWeight: 'var(--fw-bold)', margin: 0,
-              letterSpacing: '-0.01em',
-              color: '#fff',
+              fontSize: '40px', fontWeight: 'var(--fw-bold)', margin: 0,
+              letterSpacing: '-0.025em',
+              color: 'var(--surface)',
+              lineHeight: 1,
             }}>
               Leaderboard
             </h1>
@@ -94,17 +95,18 @@ export function FacilitatorLeaderboard() {
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
+                gap: '6px',
                 padding: '5px 10px',
                 fontSize: 'var(--fs-small)',
                 fontWeight: 'var(--fw-semi)',
-                color: 'var(--captech-yellow)',
-                background: 'rgba(255,255,255,0.06)',
+                color: 'var(--surface)',
+                background: 'rgba(255,255,255,0.08)',
                 border: '1px solid rgba(255,255,255,0.18)',
                 borderRadius: 'var(--radius-md)',
                 textDecoration: 'none',
               }}
             >
-              ← Responses
+              <Icon.ArrowLeft size={14} /> Responses
             </Link>
           </div>
         </div>
@@ -115,7 +117,7 @@ export function FacilitatorLeaderboard() {
           ))}
           {data && data.top.length === 0 && (
             <div style={{ padding: '40px', textAlign: 'center', color: 'rgba(255,255,255,0.6)' }}>
-              No one on the board yet — scores appear after the first submissions.
+              No one on the board yet. Scores appear after the first submissions.
             </div>
           )}
         </div>
@@ -143,21 +145,23 @@ function Row({ row, pulse }: { row: LeaderboardRow; pulse: boolean }) {
       }}
     >
       <div className="pc-flb-rank" style={{
-        minWidth: '46px',
+        minWidth: '64px',
         display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px',
-        fontSize: '30px', fontWeight: 'var(--fw-bold)',
+        fontSize: 'clamp(28px, 7vw, 40px)', fontWeight: 'var(--fw-bold)',
         color: medal,
         fontVariantNumeric: 'tabular-nums',
         lineHeight: 1,
+        letterSpacing: '-0.025em',
       }}>
-        {showMedal && <Icon.Trophy size={22} />}
+        {showMedal && <Icon.Trophy size={24} />}
         {rank}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div className="pc-flb-name" style={{
-          fontSize: '20px', fontWeight: 'var(--fw-bold)', color: '#fff',
+          fontSize: '22px', fontWeight: 'var(--fw-bold)', color: 'var(--surface)',
           whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-          lineHeight: 1.2,
+          lineHeight: 1.15,
+          letterSpacing: '-0.01em',
         }}>
           {row.username}
         </div>
@@ -166,12 +170,13 @@ function Row({ row, pulse }: { row: LeaderboardRow; pulse: boolean }) {
         </div>
       </div>
       <div className="pc-flb-xp" style={{
-        fontSize: '22px', fontWeight: 'var(--fw-bold)',
+        fontSize: '26px', fontWeight: 'var(--fw-bold)',
         color: 'var(--captech-yellow)',
         fontVariantNumeric: 'tabular-nums',
-        display: 'inline-flex', alignItems: 'center', gap: '5px',
+        display: 'inline-flex', alignItems: 'center', gap: '6px',
+        letterSpacing: '-0.015em',
       }}>
-        <Icon.Zap size={18} /> {row.xp}
+        <Icon.Zap size={20} /> {row.xp}
       </div>
     </div>
   )

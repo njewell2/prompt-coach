@@ -6,6 +6,7 @@ import type { Challenge } from '@/types'
 import { Button } from '@/components/shared/Button'
 import { Icon } from '@/components/shared/Icon'
 import { PageHeader } from '@/components/shared/PageHeader'
+import { Eyebrow } from '@/components/shared/Eyebrow'
 
 type NodeState = 'gold' | 'passed' | 'next' | 'unlocked' | 'locked'
 
@@ -29,22 +30,22 @@ function NodeCircle({ state }: { state: NodeState }) {
   const size = state === 'next' ? 44 : 36
 
   const bg =
-    state === 'gold'    ? 'var(--accent-gold)' :
+    state === 'gold'    ? 'var(--captech-yellow)' :
     state === 'passed'  ? NODE_COLOR :
     state === 'next'    ? NODE_COLOR :
-    state === 'unlocked'? 'var(--bg-card)' :
-                          'var(--bg-secondary)'
+    state === 'unlocked'? 'var(--surface)' :
+                          'var(--surface-quiet)'
 
   const border =
-    state === 'gold'    ? '2px solid var(--accent-gold)' :
+    state === 'gold'    ? '2px solid var(--captech-yellow)' :
     state === 'passed'  ? `2px solid ${NODE_COLOR}` :
     state === 'next'    ? `3px solid ${NODE_COLOR}` :
                           '2px solid var(--border)'
 
   const iconColor =
     state === 'gold'    ? 'var(--captech-navy)' :
-    state === 'passed'  ? '#fff' :
-    state === 'next'    ? '#fff' :
+    state === 'passed'  ? 'var(--surface)' :
+    state === 'next'    ? 'var(--surface)' :
                           'var(--ink-4)'
 
   const boxShadow = state === 'next' ? `0 0 0 6px ${NODE_COLOR}22` : undefined
@@ -81,14 +82,13 @@ function SectionDivider({ label }: { label: string }) {
       margin: '20px 0 16px',
     }}>
       <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
-      <span style={{
-        fontSize: 'var(--fs-micro)', fontWeight: 'var(--fw-semi)', letterSpacing: '0.08em',
-        textTransform: 'uppercase', color: 'var(--ink-3)',
-        background: 'var(--bg-secondary)', padding: '2px 10px',
+      <Eyebrow style={{
+        background: 'var(--surface-quiet)',
+        padding: '2px 10px',
         borderRadius: 'var(--radius-full)',
       }}>
         {label}
-      </span>
+      </Eyebrow>
       <div style={{ flex: 1, height: '1px', background: 'var(--border)' }} />
     </div>
   )
@@ -148,17 +148,17 @@ export function LevelMap() {
             {challengeNumber === 9 && <SectionDivider label="Combine all five" />}
 
             <div
-              onClick={() => unlocked && navigate(`/challenge/${challenge.id}`)}
+              onClick={() => navigate(`/challenge/${challenge.id}`)}
               style={{
                 display: 'flex', alignItems: 'center', gap: '16px',
                 padding: '10px 12px',
                 borderRadius: 'var(--radius-lg)',
-                cursor: unlocked ? 'pointer' : 'default',
+                cursor: 'pointer',
                 opacity: state === 'locked' ? 0.45 : 1,
                 transition: 'background 0.15s',
               }}
               onMouseEnter={e => {
-                if (unlocked) (e.currentTarget as HTMLDivElement).style.background = 'var(--bg-card-hover)'
+                (e.currentTarget as HTMLDivElement).style.background = 'var(--surface-hover)'
               }}
               onMouseLeave={e => {
                 (e.currentTarget as HTMLDivElement).style.background = 'transparent'
@@ -168,12 +168,9 @@ export function LevelMap() {
 
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', flexWrap: 'wrap' }}>
-                  <span style={{
-                    fontSize: 'var(--fs-micro)', fontWeight: 'var(--fw-semi)',
-                    color: 'var(--ink-4)', letterSpacing: '0.06em',
-                  }}>
+                  <Eyebrow color="var(--ink-4)" style={{ letterSpacing: '0.06em', fontVariantNumeric: 'tabular-nums' }}>
                     {String(challengeNumber).padStart(2, '0')}
-                  </span>
+                  </Eyebrow>
                   <span style={{
                     fontSize: 'var(--fs-body)', fontWeight: state === 'next' ? 'var(--fw-bold)' : 'var(--fw-semi)',
                     color: state === 'locked' ? 'var(--ink-4)' : 'var(--ink)',
@@ -183,7 +180,7 @@ export function LevelMap() {
                   {state === 'next' && (
                     <span style={{
                       fontSize: 'var(--fs-micro)', fontWeight: 'var(--fw-bold)',
-                      color: '#fff', background: NODE_COLOR,
+                      color: 'var(--surface)', background: NODE_COLOR,
                       padding: '2px 8px', borderRadius: 'var(--radius-full)',
                       letterSpacing: '0.06em',
                     }}>
@@ -191,8 +188,8 @@ export function LevelMap() {
                     </span>
                   )}
                   {state === 'passed' && bestScore > 0 && (
-                    <span style={{ fontSize: 'var(--fs-micro)', color: 'var(--ink-3)', fontWeight: 'var(--fw-semi)' }}>
-                      {bestScore}/100
+                    <span style={{ fontSize: 'var(--fs-micro)', color: 'var(--ink-3)', fontWeight: 'var(--fw-semi)', fontVariantNumeric: 'tabular-nums' }}>
+                      {(bestScore / 10).toFixed(1)}/10
                     </span>
                   )}
                 </div>
@@ -218,21 +215,20 @@ export function LevelMap() {
         )
       })}
 
-      {/* Free Practice CTA */}
+      {/* Free Practice CTA — The "one spark" on this page is the yellow CTA. No yellow stripe. */}
       <div style={{
         marginTop: '32px',
         padding: '20px 24px',
         background: 'var(--captech-navy)',
         borderRadius: 'var(--radius-lg)',
-        borderLeft: 'var(--accent-left-gold)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         gap: '16px', flexWrap: 'wrap',
       }}>
         <div>
-          <div style={{ fontSize: 'var(--fs-h3)', fontWeight: 'var(--fw-bold)', color: '#fff', marginBottom: '4px' }}>
+          <div style={{ fontSize: 'var(--fs-h3)', fontWeight: 'var(--fw-bold)', color: 'var(--surface)', marginBottom: '4px' }}>
             Free Practice
           </div>
-          <div style={{ fontSize: 'var(--fs-small)', color: 'rgba(255,255,255,0.7)' }}>
+          <div style={{ fontSize: 'var(--fs-small)', color: 'rgba(255,255,255,0.72)' }}>
             Submit any prompt and see the AI-improved version instantly.
           </div>
         </div>
@@ -244,7 +240,7 @@ export function LevelMap() {
             padding: '10px 18px', fontSize: 'var(--fs-body)', fontWeight: 'var(--fw-semi)',
             cursor: 'pointer', whiteSpace: 'nowrap',
             display: 'inline-flex', alignItems: 'center', gap: '6px',
-            minHeight: '40px',
+            minHeight: '44px',
           }}
         >
           Open <Icon.ArrowRight size={15} />

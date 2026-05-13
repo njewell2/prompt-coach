@@ -8,13 +8,13 @@ interface MarkdownTextProps {
 }
 
 export function MarkdownText({ text, size = 'md', maxHeight }: MarkdownTextProps) {
-  const fontSize = size === 'sm' ? 13 : 14
+  const fontSize = size === 'sm' ? 'var(--fs-small)' : 'var(--fs-body)'
   return (
     <div
       className="md-body"
       style={{
         fontSize,
-        color: 'var(--text-secondary)',
+        color: 'var(--ink-2)',
         lineHeight: 1.7,
         maxHeight,
         overflowY: maxHeight ? 'auto' : undefined,
@@ -26,7 +26,7 @@ export function MarkdownText({ text, size = 'md', maxHeight }: MarkdownTextProps
         .md-body > *:last-child { margin-bottom: 0; }
         .md-body p { margin: 0 0 12px; }
         .md-body h1, .md-body h2, .md-body h3, .md-body h4, .md-body h5, .md-body h6 {
-          color: var(--text-primary);
+          color: var(--ink);
           font-weight: 700;
           line-height: 1.3;
           margin: 18px 0 8px;
@@ -35,22 +35,22 @@ export function MarkdownText({ text, size = 'md', maxHeight }: MarkdownTextProps
         .md-body h2 { font-size: 1.15em; }
         .md-body h3 { font-size: 1.05em; }
         .md-body h4, .md-body h5, .md-body h6 { font-size: 1em; }
-        .md-body strong { color: var(--text-primary); font-weight: 700; }
+        .md-body strong { color: var(--ink); font-weight: 700; }
         .md-body em { font-style: italic; }
         .md-body ul, .md-body ol { margin: 0 0 12px; padding-left: 22px; }
         .md-body li { margin: 4px 0; }
         .md-body li > p { margin: 0; }
-        .md-body a { color: var(--accent-blue); text-decoration: underline; }
+        .md-body a { color: var(--captech-blue); text-decoration: underline; }
         .md-body code {
           font-family: var(--font-mono);
           font-size: 0.92em;
-          background: var(--bg-secondary);
+          background: var(--surface-quiet);
           padding: 1px 5px;
           border-radius: var(--radius-sm);
-          color: var(--text-primary);
+          color: var(--ink);
         }
         .md-body pre {
-          background: var(--bg-secondary);
+          background: var(--surface-quiet);
           border: 1px solid var(--border);
           border-radius: var(--radius-md);
           padding: 12px 14px;
@@ -65,10 +65,12 @@ export function MarkdownText({ text, size = 'md', maxHeight }: MarkdownTextProps
           border-radius: 0;
         }
         .md-body blockquote {
-          border-left: 3px solid var(--border);
-          color: var(--text-muted);
+          background: var(--surface-quiet);
+          color: var(--ink-3);
+          font-style: italic;
           margin: 0 0 12px;
-          padding: 2px 12px;
+          padding: 8px 14px;
+          border-radius: var(--radius-sm);
         }
         .md-body table {
           width: 100%;
@@ -82,7 +84,7 @@ export function MarkdownText({ text, size = 'md', maxHeight }: MarkdownTextProps
           text-align: left;
           vertical-align: top;
         }
-        .md-body th { background: var(--bg-secondary); color: var(--text-primary); font-weight: 700; }
+        .md-body th { background: var(--surface-quiet); color: var(--ink); font-weight: 700; }
         .md-body hr { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
       `}</style>
       <ReactMarkdown remarkPlugins={[remarkGfm]}>{text}</ReactMarkdown>

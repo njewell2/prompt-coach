@@ -14,11 +14,11 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 const baseStyles: Record<Variant, React.CSSProperties> = {
   primary: {
     background: 'var(--captech-blue)',
-    color: '#fff',
+    color: 'var(--surface)',
     border: '1px solid var(--captech-blue)',
   },
   secondary: {
-    background: '#fff',
+    background: 'var(--surface)',
     color: 'var(--captech-blue)',
     border: '1px solid var(--border)',
   },
@@ -29,7 +29,7 @@ const baseStyles: Record<Variant, React.CSSProperties> = {
   },
   danger: {
     background: 'var(--score-low)',
-    color: '#fff',
+    color: 'var(--surface)',
     border: '1px solid var(--score-low)',
   },
 }
@@ -38,7 +38,7 @@ const hoverStyles: Record<Variant, React.CSSProperties> = {
   primary:   { background: 'var(--captech-navy)', borderColor: 'var(--captech-navy)' },
   secondary: { borderColor: 'var(--captech-blue)' },
   ghost:     { background: 'rgba(0, 93, 185, 0.08)' },
-  danger:    { background: '#B5341F', borderColor: '#B5341F' },
+  danger:    { background: 'var(--score-low-strong, #B5341F)', borderColor: 'var(--score-low-strong, #B5341F)' },
 }
 
 const sizes: Record<Size, React.CSSProperties> = {

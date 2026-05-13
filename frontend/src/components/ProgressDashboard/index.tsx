@@ -84,8 +84,8 @@ function RadarChart({ averages }: { averages: Record<string, number> }) {
               textAnchor="middle"
               fontSize="11"
               fontWeight="600"
-              fill="var(--text-secondary)"
-              fontFamily="Inter, sans-serif"
+              fill="var(--ink-2)"
+              fontFamily="var(--font-sans)"
             >
               {meta?.name ?? id}
             </text>
@@ -96,7 +96,7 @@ function RadarChart({ averages }: { averages: Record<string, number> }) {
                 fontSize="11"
                 fontWeight="700"
                 fill={scoreColor(val)}
-                fontFamily="Inter, sans-serif"
+                fontFamily="var(--font-sans)"
               >
                 {val.toFixed(1)}
               </text>
@@ -120,8 +120,9 @@ export function ProgressDashboard() {
     .filter(id => averages[id] !== undefined)
     .map(id => ({ id, score: averages[id], meta: DIMENSION_META[id] }))
 
+  // averages[id] is already 0–10 per useProgress; round to one decimal for display
   const avgScore = areaEntries.length > 0
-    ? Math.round((areaEntries.reduce((s, e) => s + e.score, 0) / areaEntries.length) * 10)
+    ? Math.round((areaEntries.reduce((s, e) => s + e.score, 0) / areaEntries.length) * 10) / 10
     : 0
 
   const sortedAreas = [...areaEntries].sort((a, b) => b.score - a.score)
@@ -165,18 +166,26 @@ export function ProgressDashboard() {
       />
 
       {!hasData ? (
-        <Card padding={64} style={{ textAlign: 'center' }}>
-          <div style={{ color: 'var(--ink-4)', marginBottom: '16px', display: 'inline-flex' }}>
-            <Icon.Chart size={42} />
+        <Card padding={56} style={{ textAlign: 'center' }}>
+          <div style={{
+            color: 'var(--captech-blue)',
+            marginBottom: '20px',
+            display: 'inline-flex',
+            background: 'var(--surface-quiet)',
+            width: '64px', height: '64px',
+            alignItems: 'center', justifyContent: 'center',
+            borderRadius: '50%',
+          }}>
+            <Icon.Chart size={28} />
           </div>
-          <h2 style={{ fontSize: 'var(--fs-h1)', marginBottom: '8px' }}>
-            No attempts yet
+          <h2 style={{ fontSize: 'var(--fs-h1)', marginBottom: '8px', letterSpacing: '-0.015em' }}>
+            Nothing to chart yet
           </h2>
-          <p style={{ fontSize: 'var(--fs-body)', color: 'var(--ink-3)', marginBottom: '24px' }}>
-            Complete some challenges to see your area scores and challenge progress here.
+          <p style={{ fontSize: 'var(--fs-body)', color: 'var(--ink-3)', marginBottom: '24px', maxWidth: '46ch', marginLeft: 'auto', marginRight: 'auto' }}>
+            Your dimension averages, badges, and challenge progress show up here as soon as you score your first prompt.
           </p>
           <Button onClick={() => navigate('/')} iconRight={<Icon.ArrowRight size={15} />}>
-            Start Training
+            Start training
           </Button>
         </Card>
       ) : (
@@ -202,7 +211,7 @@ export function ProgressDashboard() {
               </span>}
             />
             <StatCard label="Total Attempts" value={appStats.totalAttempts} sub="submissions" />
-            <StatCard label="Avg Score" value={`${avgScore}/10`} sub="across areas" />
+            <StatCard label="Avg Score" value={`${avgScore.toFixed(1)}/10`} sub="across areas" />
           </div>
 
           {/* Badges */}
@@ -251,9 +260,11 @@ export function ProgressDashboard() {
                     </div>
                     <div style={{ height: '6px', background: 'var(--surface-quiet)', borderRadius: 'var(--radius-full)', overflow: 'hidden' }}>
                       <div style={{
-                        height: '100%', width: `${pct}%`,
+                        height: '100%', width: '100%',
                         background: b.earned ? 'var(--captech-yellow)' : 'var(--captech-blue)',
-                        transition: 'width 0.8s ease',
+                        transformOrigin: 'left center',
+                        transform: `scaleX(${pct / 100})`,
+                        transition: 'transform 0.8s cubic-bezier(0.22, 1, 0.36, 1)',
                       }} />
                     </div>
                     <div style={{ marginTop: '6px', fontSize: 'var(--fs-micro)', color: 'var(--ink-3)' }}>
@@ -349,11 +360,11 @@ export function ProgressDashboard() {
                             fontVariantNumeric: 'tabular-nums',
                           }}>
                             {best}
-                            {gold && <Icon.Trophy size={11} style={{ marginLeft: 4, verticalAlign: 'text-top', color: 'var(--accent-gold)' }} />}
+                            {gold && <Icon.Trophy size={11} style={{ marginLeft: 4, verticalAlign: 'text-top', color: 'var(--captech-yellow)' }} />}
                             {passed && !gold && <Icon.CheckCircle size={11} style={{ marginLeft: 4, verticalAlign: 'text-top', color: 'var(--score-high)' }} />}
                           </span>
                         ) : (
-                          <span style={{ fontSize: 'var(--fs-micro)', color: 'var(--ink-4)' }}>—</span>
+                          <span style={{ fontSize: 'var(--fs-micro)', color: 'var(--ink-4)' }}>·</span>
                         )}
                       </div>
                     )
@@ -391,7 +402,7 @@ export function ProgressDashboard() {
                           {meta?.name ?? id}
                         </span>
                         <span style={{ fontSize: 'var(--fs-micro)', color: 'var(--ink-3)' }}>
-                          — {meta?.description}
+                          · {meta?.description}
                         </span>
                       </div>
                       <span style={{
@@ -408,15 +419,17 @@ export function ProgressDashboard() {
                       borderRadius: 'var(--radius-full)', overflow: 'hidden',
                     }}>
                       <div style={{
-                        height: '100%', width: `${score * 10}%`,
+                        height: '100%', width: '100%',
                         background: scoreColor(score),
                         borderRadius: 'var(--radius-full)',
-                        transition: 'width 1s ease',
+                        transformOrigin: 'left center',
+                        transform: `scaleX(${score / 10})`,
+                        transition: 'transform 1s cubic-bezier(0.22, 1, 0.36, 1)',
                       }} />
                     </div>
                     {i === sortedAreas.length - 1 && sortedAreas.length > 1 && (
                       <p style={{ fontSize: 'var(--fs-micro)', color: 'var(--ink-3)', marginTop: '4px' }}>
-                        Focus here — this area needs the most work.
+                        Focus here. This area needs the most work.
                       </p>
                     )}
                   </div>

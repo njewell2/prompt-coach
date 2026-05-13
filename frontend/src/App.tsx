@@ -40,7 +40,7 @@ function AuthenticatedApp() {
   const { user } = useAuth()
   if (!user) return <LoginScreen />
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-secondary)', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--page-bg)', display: 'flex', flexDirection: 'column' }}>
       <Header user={user} />
       <main style={{ flex: 1 }}>
         <Routes>

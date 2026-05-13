@@ -36,7 +36,7 @@ export function Card({
     border: variant === 'quiet' ? '1px solid transparent' : '1px solid var(--border)',
     borderRadius: 'var(--radius-lg)',
     padding: typeof padding === 'number' ? `${padding}px` : padding,
-    boxShadow: variant === 'quiet' ? 'none' : 'var(--shadow-card)',
+    boxShadow: 'none',
     transition: 'box-shadow 0.15s ease, border-color 0.15s ease, transform 0.1s ease',
   }
   if (accent === 'gold') base.borderLeft = 'var(--accent-left-gold)'
@@ -56,7 +56,7 @@ export function Card({
         ;(e.currentTarget as HTMLDivElement).style.boxShadow = 'var(--shadow-card-hover)'
       } : undefined}
       onMouseLeave={isInteractive ? (e) => {
-        ;(e.currentTarget as HTMLDivElement).style.boxShadow = variant === 'quiet' ? 'none' : 'var(--shadow-card)'
+        ;(e.currentTarget as HTMLDivElement).style.boxShadow = 'none'
       } : undefined}
     >
       {children}

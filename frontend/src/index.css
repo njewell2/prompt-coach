@@ -6,53 +6,39 @@
   --captech-blue:        #005DB9;
   --captech-navy:        #003865;
   --captech-yellow:      #FDDA24;
-  --captech-cyan:        #00A5DF;
   --captech-dark-navy:   #002B5F;
 
-  /* ── Ink (CasePath-aligned near-black palette) ── */
+  /* ── Ink palette (near-black with cool slate ramp; never #000) ── */
   --ink:     #0F172A;   /* headings */
   --ink-2:   #334155;   /* body */
   --ink-3:   #64748B;   /* muted */
   --ink-4:   #94A3B8;   /* quiet captions */
 
-  /* Back-compat text tokens now point at ink palette */
-  --text-primary:   var(--ink);
-  --text-secondary: var(--ink-2);
-  --text-muted:     var(--ink-3);
-  --text-inverse:   #ffffff;
-
-  /* ── Surfaces (slightly cooler than before) ── */
+  /* ── Surfaces (cool, brand-tinted) ── */
   --page-bg:        #F6F8FA;
-  --bg-primary:     #ffffff;
-  --bg-secondary:   var(--page-bg);
-  --bg-card:        #ffffff;
-  --bg-card-hover:  #F9FBFD;
   --surface:        #ffffff;
   --surface-hover:  #F9FBFD;
   --surface-quiet:  #F4F6F9;
 
   /* ── Accent mappings ── */
-  --accent-navy:      var(--captech-navy);
-  --accent-blue:      var(--captech-blue);
   --accent-gold:      var(--captech-yellow);
   --accent-gold-light:#FFFBE6;
-  --accent-cyan:      var(--captech-cyan);
 
-  /* ── Tier colors ── */
+  /* ── Tier colors ──
+     Spec: 3 tier chips are all CapTech-blue text on surface-quiet — variation
+     comes from copy ("Beginner / Intermediate / Advanced"), not from new hues. */
   --tier-beginner:        var(--captech-blue);
-  --tier-beginner-bg:     #EEF5FC;
-  --tier-intermediate:    var(--captech-cyan);
-  --tier-intermediate-bg: #E6F6FC;
+  --tier-intermediate:    var(--captech-blue);
   --tier-advanced:        var(--captech-navy);
-  --tier-advanced-bg:     #E6EDF4;
 
   /* ── Scores ── */
-  --score-low:     #D94032;
-  --score-low-bg:  #FEF2F2;
-  --score-mid:     #E8A000;
-  --score-mid-bg:  #FFFBEB;
-  --score-high:    #1A7E42;
-  --score-high-bg: #F0FDF4;
+  --score-low:        #D94032;
+  --score-low-strong: #B5341F;  /* danger button hover */
+  --score-low-bg:     #FEF2F2;
+  --score-mid:        #E8A000;
+  --score-mid-bg:     #FFFBEB;
+  --score-high:       #1A7E42;
+  --score-high-bg:    #F0FDF4;
 
   /* ── Research sources (formerly inline hex) ── */
   --source-anthropic: #D97706;
@@ -83,18 +69,34 @@
   --radius-xl:   12px;
   --radius-full: 9999px;
 
-  /* ── Type scale ── */
-  --fs-display: 32px;
+  /* ── Type scale ──
+     Modular ramp: 11 / 13 / 14 / 16 / 18 / 24 / 40 / 56.
+     Ratios: micro→small 1.18, small→body 1.08, body→h3 1.14, h3→h2 1.13,
+     h2→h1 1.33, h1→display 1.67. Body and h3 are 14/16 (kept close on
+     purpose; the upgrade in weight + line-height carries the hierarchy).
+     Display 40px commits at hero moments. Numeral 56px is the gold standard
+     for score circles and focused-dimension scores. */
+  --fs-display: 40px;
   --fs-h1:      24px;
   --fs-h2:      18px;
-  --fs-h3:      15px;
+  --fs-h3:      16px;
+  --fs-lead:    16px;   /* subtitle / lead body, slightly larger than body */
   --fs-body:    14px;
   --fs-small:   13px;
   --fs-micro:   11px;
+  --fs-numeral: 56px;
 
-  --fw-bold: 700;
-  --fw-semi: 600;
-  --fw-reg:  400;
+  /* ── Letter-spacing tokens ── */
+  --tracking-display: -0.025em;
+  --tracking-tight:   -0.015em;
+  --tracking-normal:  0;
+  --tracking-wide:    0.08em;     /* eyebrows, micro-labels */
+  --tracking-medal:   0.06em;     /* numeric labels */
+
+  --fw-bold:  700;
+  --fw-semi:  600;
+  --fw-med:   500;
+  --fw-reg:   400;
 
   /* ── Typography ── */
   --font-sans: 'canada-type-gibson', 'Gibson', 'Helvetica Neue', Arial, sans-serif;
@@ -124,7 +126,7 @@ html {
 
 body {
   font-family: var(--font-sans);
-  background: var(--bg-secondary);
+  background: var(--page-bg);
   color: var(--ink-2);
   line-height: 1.55;
   min-height: 100vh;
@@ -138,7 +140,7 @@ body {
 }
 
 a {
-  color: var(--accent-blue);
+  color: var(--captech-blue);
   text-decoration: none;
 }
 
@@ -154,7 +156,7 @@ button {
 }
 
 button:focus-visible {
-  outline: 2px solid var(--accent-blue);
+  outline: 2px solid var(--captech-blue);
   outline-offset: 2px;
 }
 
@@ -171,20 +173,23 @@ button, [role="button"] {
 /* ── Typography baselines ── */
 h1, h2, h3, h4, h5, h6 {
   color: var(--ink);
-  letter-spacing: -0.01em;
-  line-height: 1.25;
+  line-height: 1.18;
+  font-feature-settings: "ss01", "ss02";
 }
-h1 { font-size: var(--fs-display); font-weight: var(--fw-bold); }
-h2 { font-size: var(--fs-h1);      font-weight: var(--fw-bold); }
-h3 { font-size: var(--fs-h2);      font-weight: var(--fw-semi); }
+h1 { font-size: var(--fs-display); font-weight: var(--fw-bold); letter-spacing: var(--tracking-display); }
+h2 { font-size: var(--fs-h1);      font-weight: var(--fw-bold); letter-spacing: var(--tracking-tight); }
+h3 { font-size: var(--fs-h2);      font-weight: var(--fw-semi); letter-spacing: var(--tracking-tight); }
+h4, h5, h6 { font-size: var(--fs-h3); font-weight: var(--fw-semi); letter-spacing: var(--tracking-tight); }
 p  { color: var(--ink-2); }
+small { font-size: var(--fs-small); }
 
 /* ── Mobile overrides ── */
 @media (max-width: 640px) {
   :root {
     --section-pad: 24px;
-    --fs-display: 26px;
-    --fs-h1:      20px;
+    --fs-display: 30px;
+    --fs-h1:      22px;
+    --fs-numeral: 44px;
   }
 }
 
@@ -232,13 +237,4 @@ p  { color: var(--ink-2); }
 
 @keyframes spin {
   to { transform: rotate(360deg); }
-}
-
-/* Legacy helper kept for back-compat; no longer auto-applied under every heading */
-.ct-underline {
-  width: 40px;
-  height: 3px;
-  background: var(--accent-gold);
-  border-radius: 2px;
-  margin-bottom: 8px;
 }
