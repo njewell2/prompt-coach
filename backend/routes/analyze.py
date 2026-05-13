@@ -1,10 +1,12 @@
 import json
 import queue
 import re
+import threading
 import time
 import traceback
 import uuid
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass, field
 
 from flask import Blueprint, Response, jsonify, request, session
 
@@ -22,7 +24,26 @@ from backend.prompts.evaluator_system import (
 
 analyze_bp = Blueprint("analyze", __name__)
 
-_session_store: dict = {}
+
+@dataclass
+class _SessionSlot:
+    """Reveal handoff between the analyze worker and the /api/reveal poller.
+
+    The slot is created when /api/analyze emits scoring_complete; the sonnet
+    worker fills it later via _stash_improved and sets `ready` so any waiting
+    /api/reveal call wakes immediately instead of polling.
+    """
+    ready: threading.Event = field(default_factory=threading.Event)
+    data: dict | None = None
+    error: str | None = None
+
+
+_session_store: dict[str, _SessionSlot] = {}
+
+# Hard ceiling for /api/reveal to wait on the sonnet worker. Bedrock Sonnet 4.5
+# with a 2k-token completion is typically 6-15s but can spike to 25s on cold
+# routes; allow headroom past the longest realistic completion before giving up.
+REVEAL_WAIT_SECONDS = 30.0
 
 _CHALLENGES_BY_ID = {c["id"]: c for c in CHALLENGES}
 
@@ -101,8 +122,9 @@ def _persist_scoring(
     token: str | None = None
     if expect_improved:
         token = str(uuid.uuid4())
-        # Reserve the slot now; the improve worker will fill it in.
-        _session_store[token] = None
+        # Reserve the slot now; the improve worker will fill it in and
+        # signal `ready` so any pending /api/reveal call wakes instantly.
+        _session_store[token] = _SessionSlot()
         extras["session_token"] = token
 
     if user_id:
@@ -132,11 +154,27 @@ def _persist_scoring(
 def _stash_improved(token: str | None, improve_data: dict) -> None:
     if not token:
         return
-    _session_store[token] = {
+    slot = _session_store.get(token)
+    if slot is None:
+        return
+    slot.data = {
         "improved_prompt": improve_data.get("improved_prompt", ""),
         "improved_dimensions": improve_data.get("improved_dimensions", []),
         "improved_overall_score": improve_data.get("improved_overall_score"),
     }
+    slot.ready.set()
+
+
+def _stash_improve_failure(token: str | None, error: str) -> None:
+    """Wake any /api/reveal poller with a failure so it can return early
+    instead of timing out at the wait ceiling."""
+    if not token:
+        return
+    slot = _session_store.get(token)
+    if slot is None:
+        return
+    slot.error = error
+    slot.ready.set()
 
 
 def _stream(
@@ -293,12 +331,24 @@ def _stream(
                 improve = payload
                 _stash_improved(scoring_extras.get("session_token"), improve["data"])
                 continue
+            if kind == "__improve_failed__":
+                _stash_improve_failure(scoring_extras.get("session_token"), payload)
+                failed = payload
+                break
             if kind.endswith("_failed__"):
                 failed = payload
                 break
             yield _sse(kind, payload)
     finally:
         pool.shutdown(wait=False)
+        # If we exit while a slot is still un-fulfilled (scoring failed before
+        # sonnet could finish, request abort, etc.), wake any waiting reveal.
+        token = scoring_extras.get("session_token")
+        if token:
+            slot = _session_store.get(token)
+            if slot is not None and not slot.ready.is_set():
+                slot.error = failed or "Analysis interrupted"
+                slot.ready.set()
 
     if failed:
         yield _sse("error", {"error": "Analysis failed", "detail": failed})
@@ -341,13 +391,14 @@ def analyze():
 def reveal():
     body = request.get_json(force=True)
     token = body.get("session_token", "")
-    if token not in _session_store:
+    slot = _session_store.get(token)
+    if slot is None:
         return jsonify({"error": "Invalid or expired session token"}), 404
-    # Token slot may be reserved but not yet populated — improve worker
-    # races with the user clicking reveal. Poll briefly.
-    for _ in range(120):  # up to ~12s
-        data = _session_store.get(token)
-        if data:
-            return jsonify(data)
-        time.sleep(0.1)
-    return jsonify({"error": "Improved prompt not ready"}), 504
+    # Block until the sonnet worker either fills the slot or signals failure.
+    # Event.wait() releases the GIL while waiting, unlike a sleep loop, and
+    # wakes the instant the worker calls slot.ready.set().
+    if not slot.ready.wait(timeout=REVEAL_WAIT_SECONDS):
+        return jsonify({"error": "Improved prompt not ready"}), 504
+    if slot.error or slot.data is None:
+        return jsonify({"error": slot.error or "Improved prompt failed"}), 502
+    return jsonify(slot.data)

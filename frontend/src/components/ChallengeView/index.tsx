@@ -796,8 +796,8 @@ function ExpertComparison({
         {revealData ? (
           <pre style={{
             background: 'var(--surface-quiet)', borderRadius: 'var(--radius-md)',
-            padding: '16px', fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-small)',
-            color: 'var(--ink)', lineHeight: 1.7,
+            padding: '14px', fontFamily: 'var(--font-sans)', fontSize: 'var(--fs-body)',
+            color: 'var(--ink)', lineHeight: 1.6,
             whiteSpace: 'pre-wrap', wordBreak: 'break-word',
             margin: 0, maxHeight: '400px', overflowY: 'auto',
           }}>
