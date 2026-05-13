@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { CapTechLogo } from '@/components/shared/CapTechLogo'
+import { BrandLogo } from '@/components/shared/BrandLogo'
 import { Icon } from '@/components/shared/Icon'
 
 export function FacilitatorHub() {
@@ -14,10 +14,7 @@ export function FacilitatorHub() {
           maxWidth: '720px', margin: '0 auto',
           display: 'flex', alignItems: 'center', gap: '12px',
         }}>
-          <CapTechLogo color="var(--captech-blue)" height={20} />
-          <span style={{ fontSize: 'var(--fs-body)', fontWeight: 'var(--fw-bold)', color: 'var(--ink)' }}>
-            Prompt Coach
-          </span>
+          <BrandLogo logoColor="var(--captech-blue)" textColor="var(--ink)" height={22} />
           <span style={{
             fontSize: 'var(--fs-micro)',
             fontWeight: 'var(--fw-bold)',

@@ -1,6 +1,6 @@
 import { useState, FormEvent } from 'react'
 import { useAuth } from '@/hooks/useAuth'
-import { CapTechLogo } from '@/components/shared/CapTechLogo'
+import { BrandLogo } from '@/components/shared/BrandLogo'
 import { Button } from '@/components/shared/Button'
 import { Icon } from '@/components/shared/Icon'
 
@@ -37,17 +37,8 @@ export function LoginScreen() {
       `}</style>
 
       {/* Brand row */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '32px' }}>
-        <CapTechLogo color="var(--captech-blue)" height={32} />
-        <span style={{
-          fontSize: 'var(--fs-display)',
-          fontWeight: 'var(--fw-bold)',
-          color: 'var(--ink)',
-          letterSpacing: '-0.025em',
-          lineHeight: 1,
-        }}>
-          Prompt Coach
-        </span>
+      <div style={{ display: 'flex', alignItems: 'center', marginBottom: '32px' }}>
+        <BrandLogo logoColor="var(--captech-blue)" textColor="var(--ink)" height={36} />
       </div>
 
       <div className="login-card" style={{

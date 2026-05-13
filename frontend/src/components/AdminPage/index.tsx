@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CapTechLogo } from '@/components/shared/CapTechLogo'
+import { BrandLogo } from '@/components/shared/BrandLogo'
 import { Button } from '@/components/shared/Button'
 import { Icon } from '@/components/shared/Icon'
 
@@ -55,10 +55,7 @@ export function AdminPage() {
           maxWidth: '720px', margin: '0 auto',
           display: 'flex', alignItems: 'center', gap: '12px',
         }}>
-          <CapTechLogo color="var(--captech-blue)" height={20} />
-          <span style={{ fontSize: 'var(--fs-body)', fontWeight: 'var(--fw-bold)', color: 'var(--ink)' }}>
-            Prompt Coach
-          </span>
+          <BrandLogo logoColor="var(--captech-blue)" textColor="var(--ink)" height={22} />
           <span style={{
             fontSize: 'var(--fs-micro)',
             fontWeight: 'var(--fw-bold)',

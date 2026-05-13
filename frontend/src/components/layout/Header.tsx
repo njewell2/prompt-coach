@@ -2,7 +2,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { useProgress } from '@/hooks/useProgress'
 import { useAuth, type AuthUser } from '@/hooks/useAuth'
 import { Icon } from '@/components/shared/Icon'
-import { CapTechLogo } from '@/components/shared/CapTechLogo'
+import { BrandLogo } from '@/components/shared/BrandLogo'
 
 const BADGE_META: Record<string, { Comp: (p: any) => JSX.Element; label: string }> = {
   golden_beginner: { Comp: Icon.Trophy, label: 'Golden Beginner' },
@@ -43,7 +43,6 @@ export function Header({ user }: { user: AuthUser }) {
             gap: 8px !important;
           }
           .pc-header-nav { flex-wrap: wrap !important; gap: 2px !important; }
-          .pc-header-brand-title { font-size: 15px !important; }
           .pc-header-user { max-width: 80px !important; font-size: 11px !important; }
         }
       `}</style>
@@ -64,19 +63,10 @@ export function Header({ user }: { user: AuthUser }) {
           aria-label="Prompt Coach — home"
           style={{
             background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-            display: 'flex', alignItems: 'center', gap: '10px',
+            display: 'flex', alignItems: 'center',
           }}
         >
-          <CapTechLogo color="var(--captech-blue)" height={22} />
-          <span className="pc-header-brand-title" style={{
-            fontSize: 'var(--fs-h2)',
-            fontWeight: 'var(--fw-bold)',
-            color: 'var(--ink)',
-            letterSpacing: '-0.01em',
-            lineHeight: 1,
-          }}>
-            Prompt Coach
-          </span>
+          <BrandLogo logoColor="var(--captech-blue)" textColor="var(--ink)" height={26} />
         </button>
 
         {/* XP pill + earned badges — kept separate so they have breathing room and aren't part of the brand hit-area */}
