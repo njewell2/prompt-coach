@@ -40,6 +40,13 @@ def static_assets(filename):
 def serve_spa(path):
     if path.startswith("api/"):
         return jsonify({"error": "Not found"}), 404
+    # Serve real static files at the root (e.g. /favicon.svg, /robots.txt) when present.
+    # Without this, the SPA fallback below returns index.html for any non-/assets path,
+    # which makes browsers receive HTML when they request a favicon.
+    if path:
+        candidate = os.path.join(STATIC_DIR, path)
+        if os.path.isfile(candidate):
+            return send_from_directory(STATIC_DIR, path)
     index = os.path.join(STATIC_DIR, "index.html")
     if os.path.exists(index):
         return send_from_directory(STATIC_DIR, "index.html")

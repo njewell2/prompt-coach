@@ -101,6 +101,7 @@ export function LevelMap() {
 
   const appStats = stats()
   const nextChallenge = CHALLENGES.find(c => isUnlocked(c.id) && (getProgress(c.id)?.best_score ?? 0) < 75)
+  const nextChallengeNumber = nextChallenge ? CHALLENGES.findIndex(c => c.id === nextChallenge.id) + 1 : null
 
   return (
     <div className="pc-levelmap-page" style={{ maxWidth: '600px', margin: '0 auto', padding: '40px 24px 64px' }}>
@@ -126,7 +127,12 @@ export function LevelMap() {
             onClick={() => navigate(`/challenge/${nextChallenge.id}`)}
             iconRight={<Icon.ArrowRight size={16} />}
           >
-            {appStats.totalAttempts > 0 ? 'Continue' : 'Start'}
+            <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: '6px' }}>
+              <span>{appStats.totalAttempts > 0 ? 'Continue' : 'Start'} with Challenge</span>
+              <span style={{ fontSize: '1.35em', fontWeight: 'var(--fw-bold)', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
+                {nextChallengeNumber}
+              </span>
+            </span>
           </Button>
         ) : null}
       />
@@ -151,22 +157,27 @@ export function LevelMap() {
               onClick={() => navigate(`/challenge/${challenge.id}`)}
               style={{
                 display: 'flex', alignItems: 'center', gap: '16px',
-                padding: '10px 12px',
+                padding: '14px 16px',
                 borderRadius: 'var(--radius-lg)',
+                background: 'var(--surface)',
+                border: '1px solid var(--border)',
+                boxShadow: 'var(--shadow-card)',
                 cursor: 'pointer',
                 opacity: state === 'locked' ? 0.45 : 1,
-                transition: 'background 0.15s, box-shadow 0.15s, transform 0.15s',
+                transition: 'background 0.15s, box-shadow 0.15s, transform 0.15s, border-color 0.15s',
               }}
               onMouseEnter={e => {
                 const el = e.currentTarget as HTMLDivElement
-                el.style.background = 'var(--bg-card-hover)'
-                el.style.boxShadow = 'var(--shadow-card)'
-                el.style.transform = 'translateY(-1px)'
+                el.style.background = 'var(--surface-hover)'
+                el.style.boxShadow = 'var(--shadow-card-hover)'
+                el.style.borderColor = 'var(--border-strong, var(--border))'
+                el.style.transform = 'translateY(-2px)'
               }}
               onMouseLeave={e => {
                 const el = e.currentTarget as HTMLDivElement
-                el.style.background = 'transparent'
-                el.style.boxShadow = 'none'
+                el.style.background = 'var(--surface)'
+                el.style.boxShadow = 'var(--shadow-card)'
+                el.style.borderColor = 'var(--border)'
                 el.style.transform = 'translateY(0)'
               }}
             >
@@ -193,7 +204,7 @@ export function LevelMap() {
                       NEXT
                     </span>
                   )}
-                  {state === 'passed' && bestScore > 0 && (
+                  {(state === 'passed' || state === 'gold') && bestScore > 0 && (
                     <span style={{ fontSize: 'var(--fs-micro)', color: 'var(--ink-3)', fontWeight: 'var(--fw-semi)', fontVariantNumeric: 'tabular-nums' }}>
                       {(bestScore / 10).toFixed(1)}/10
                     </span>
@@ -205,8 +216,9 @@ export function LevelMap() {
             {!isLast && (
               <div style={{
                 marginLeft: '34px',
-                width: '2px', height: '16px',
+                width: '2px', height: '12px',
                 background: 'var(--border)',
+                margin: '4px 0 4px 34px',
               }} />
             )}
           </div>

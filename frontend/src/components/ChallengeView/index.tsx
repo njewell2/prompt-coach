@@ -126,10 +126,12 @@ export function ChallengeView() {
         }
       : null
 
-  // On return to a previously revealed challenge: hydrate from in-memory cache
-  // if we have it (no network), otherwise best-effort re-reveal. The session
-  // store is in-memory, so a backend restart will 404 — we just render without
-  // the expert comparison rather than shimmering forever.
+  // On return to a previously revealed challenge: hydrate the expert comparison
+  // from the in-memory cache if we have it. Otherwise leave it hidden — the
+  // persisted score/feedback above is what shows the "previous run", and the
+  // user can re-submit to refresh the expert comparison. We deliberately do NOT
+  // re-trigger reveal/execute here: that would shimmer indefinitely if the
+  // backend session is no longer available.
   useEffect(() => {
     if (
       displayResult?.source === 'persisted' &&
@@ -139,13 +141,10 @@ export function ChallengeView() {
       exec.userExec.phase === 'idle' &&
       exec.expertExec.phase === 'idle'
     ) {
-      if (exec.hydrateFromCache(challengeId)) return
-      if (lastAttempt?.session_token) {
-        exec.revealAndExecuteBoth(lastAttempt.session_token, lastAttempt.prompt, challengeId)
-      }
+      exec.hydrateFromCache(challengeId)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [displayResult?.source, prog?.revealed, lastAttempt?.session_token, challengeId])
+  }, [displayResult?.source, prog?.revealed, challengeId])
 
   async function handleSubmit() {
     if (!promptText.trim() || !challenge) return
@@ -609,8 +608,10 @@ export function ChallengeView() {
           })()}
 
           {/* Expert comparison — render header + shimmers as soon as a submit is in flight,
-              fill in each section as data arrives. */}
-          {(displayResult.source === 'fresh' || (displayResult.source === 'persisted' && prog?.revealed)) && (
+              fill in each section as data arrives. On a persisted revisit with no cached
+              expert data, we skip rendering this entirely; the user can re-submit to
+              regenerate it instead of staring at empty shimmers. */}
+          {(displayResult.source === 'fresh' || exec.isRevealing || exec.revealData || exec.userExec.phase !== 'idle' || exec.expertExec.phase !== 'idle') && (
             <ExpertComparison
               revealData={exec.revealData}
               userExec={exec.userExec}

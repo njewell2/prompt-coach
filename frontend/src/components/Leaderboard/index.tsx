@@ -78,7 +78,8 @@ export function Leaderboard() {
   }
 
   const rows = buildDisplayRows(data)
-  const showDivider = rows.some(r => r.kind !== 'top')
+  const topRows = rows.filter(r => r.kind === 'top')
+  const nearRows = rows.filter(r => r.kind !== 'top')
 
   return (
     <div style={{ marginBottom: '32px' }}>
@@ -90,21 +91,48 @@ export function Leaderboard() {
         </span>
       </div>
 
+      {topRows.length > 0 && (
+        <RowGroup label="Top of the board">
+          {topRows.map((r, i) => (
+            <Row key={`${r.kind}-${r.username}-${r.rank}`} row={r} pulse={pulseKeys.has(r.username)} isFirst={i === 0} />
+          ))}
+        </RowGroup>
+      )}
+
+      {nearRows.length > 0 && (
+        <div style={{ marginTop: '20px' }}>
+          <RowGroup label="Near you">
+            {nearRows.map((r, i) => (
+              <Row key={`${r.kind}-${r.username}-${r.rank}`} row={r} pulse={pulseKeys.has(r.username)} isFirst={i === 0} />
+            ))}
+          </RowGroup>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function RowGroup({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <div style={{
+        fontSize: 'var(--fs-micro)',
+        fontWeight: 'var(--fw-bold)',
+        color: 'var(--ink-3)',
+        letterSpacing: '0.08em',
+        textTransform: 'uppercase',
+        margin: '0 0 8px 4px',
+      }}>
+        {label}
+      </div>
       <div style={{
         background: 'var(--surface)',
         border: '1px solid var(--border)',
         borderRadius: 'var(--radius-lg)',
         overflow: 'hidden',
+        boxShadow: 'var(--shadow-card)',
       }}>
-        {rows.map((r, i) => (
-          <Row
-            key={`${r.kind}-${r.username}-${r.rank}`}
-            row={r}
-            showTop={i === 0 || rows[i - 1].kind !== r.kind}
-            showDivider={showDivider && i > 0 && (rows[i - 1].kind === 'top' && r.kind !== 'top')}
-            pulse={pulseKeys.has(r.username)}
-          />
-        ))}
+        {children}
       </div>
     </div>
   )
@@ -149,7 +177,7 @@ function buildDisplayRows(data: LeaderboardMeResponse): DisplayRow[] {
   return out
 }
 
-function Row({ row, showDivider, pulse }: { row: DisplayRow; showTop: boolean; showDivider: boolean; pulse: boolean }) {
+function Row({ row, pulse, isFirst }: { row: DisplayRow; pulse: boolean; isFirst: boolean }) {
   const rankColor = row.rank === 1 ? 'var(--medal-gold)'
     : row.rank === 2 ? 'var(--medal-silver)'
     : row.rank === 3 ? 'var(--medal-bronze)'
@@ -161,7 +189,7 @@ function Row({ row, showDivider, pulse }: { row: DisplayRow; showTop: boolean; s
         alignItems: 'center',
         gap: '12px',
         padding: '12px 16px',
-        borderTop: showDivider ? '1px dashed var(--border)' : '1px solid var(--border)',
+        borderTop: isFirst ? 'none' : '1px solid var(--border)',
         borderLeft: row.is_you ? 'var(--accent-left-blue)' : '4px solid transparent',
         background: row.is_you ? 'rgba(0, 93, 185, 0.04)' : 'transparent',
         animation: pulse ? 'pc-pulse 1.1s ease-out' : undefined,

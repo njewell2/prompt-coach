@@ -7,6 +7,8 @@ import { ErrorBoundary } from '@/components/shared/ErrorBoundary'
 import { LoginScreen } from '@/components/LoginScreen'
 import { FacilitatorResponses } from '@/components/FacilitatorResponses'
 import { FacilitatorLeaderboard } from '@/components/FacilitatorLeaderboard'
+import { FacilitatorHub } from '@/components/FacilitatorHub'
+import { AdminPage } from '@/components/AdminPage'
 import { useAuth } from '@/hooks/useAuth'
 import { CapTechLogo } from '@/components/shared/CapTechLogo'
 
@@ -59,6 +61,8 @@ export default function App() {
     <BrowserRouter>
       <ErrorBoundary>
         <Routes>
+          <Route path="/f" element={<FacilitatorHub />} />
+          <Route path="/a" element={<AdminPage />} />
           <Route path="/facilitator/responses" element={<FacilitatorResponses />} />
           <Route path="/facilitator/leaderboard" element={<FacilitatorLeaderboard />} />
           <Route path="*" element={<AuthenticatedApp />} />
