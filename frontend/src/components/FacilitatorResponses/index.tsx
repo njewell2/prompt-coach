@@ -40,7 +40,7 @@ export function FacilitatorResponses() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'var(--bg-secondary)',
+      background: 'var(--page-bg)',
       padding: '20px 16px',
     }}>
       <style>{`

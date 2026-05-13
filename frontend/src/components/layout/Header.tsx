@@ -108,7 +108,10 @@ export function Header({ user }: { user: AuthUser }) {
                 if (!meta) return null
                 const C = meta.Comp
                 return (
-                  <span key={bid} title={b.label} style={{ color: 'var(--captech-yellow)', display: 'inline-flex' }}>
+                  // Earned badges sit next to the yellow XP pill, so we render them in
+                  // captech-navy (not yellow) to honor DESIGN.md's One Spark Rule:
+                  // at most one yellow glyph above 14px on any given screen.
+                  <span key={bid} title={b.label} style={{ color: 'var(--captech-navy)', display: 'inline-flex' }}>
                     <C size={16} />
                   </span>
                 )
@@ -127,7 +130,8 @@ export function Header({ user }: { user: AuthUser }) {
                 style={{
                   background: 'none',
                   border: 'none',
-                  padding: '18px 10px',
+                  padding: '0 10px',
+                  height: '60px',
                   fontSize: 'var(--fs-small)',
                   fontWeight: active ? 'var(--fw-semi)' : 'var(--fw-reg)',
                   color: active ? 'var(--ink)' : 'var(--ink-3)',
@@ -136,6 +140,8 @@ export function Header({ user }: { user: AuthUser }) {
                   transition: 'color 0.15s',
                   letterSpacing: '0.01em',
                   minHeight: '44px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
                 }}
                 onMouseEnter={e => {
                   if (!active) (e.currentTarget as HTMLButtonElement).style.color = 'var(--ink)'
@@ -192,8 +198,8 @@ export function Header({ user }: { user: AuthUser }) {
                 cursor: 'pointer',
                 display: 'inline-flex',
                 alignItems: 'center',
-                minHeight: '32px',
-                minWidth: '32px',
+                minHeight: '36px',
+                minWidth: '36px',
                 justifyContent: 'center',
               }}
             >

@@ -9,9 +9,9 @@ export function scoreLabel(score: number, outOf100 = false): ScoreLabel {
   return 'Foundational'
 }
 
-/** Convert an overall 0-100 score to a 0-10 display score */
+/** Convert an overall 0-100 score to a 0-10 display score with one decimal */
 export function toDisplayScore(score: number): number {
-  return Math.round(score / 10)
+  return Math.round(score) / 10
 }
 
 export function scoreColor(score: number, outOf100 = false): string {
@@ -31,13 +31,15 @@ export function scoreBg(score: number, outOf100 = false): string {
 export function deltaColor(delta: number): string {
   if (delta > 0) return 'var(--score-high)'
   if (delta < 0) return 'var(--score-low)'
-  return 'var(--text-muted)'
+  return 'var(--ink-3)'
 }
 
 export function formatDelta(delta: number): string {
-  if (delta > 0) return `+${delta} ↑`
-  if (delta < 0) return `${delta} ↓`
-  return '—'
+  const rounded = Math.round(delta * 10) / 10
+  const text = Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1)
+  if (rounded > 0) return `+${text} ↑`
+  if (rounded < 0) return `${text} ↓`
+  return '·'
 }
 
 export function timeAgo(ts: number): string {

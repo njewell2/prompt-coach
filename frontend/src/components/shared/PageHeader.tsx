@@ -34,19 +34,22 @@ export function PageHeader({ title, subtitle, eyebrow, right, size = 'default' }
         )}
         <h1 style={{
           fontSize: titleSize,
-          lineHeight: 1.2,
+          lineHeight: 1.1,
           margin: 0,
           color: 'var(--ink)',
+          letterSpacing: size === 'compact' ? 'var(--tracking-tight)' : 'var(--tracking-display)',
+          fontWeight: 'var(--fw-bold)',
         }}>
           {title}
         </h1>
         {subtitle && (
           <p style={{
-            marginTop: '8px',
-            fontSize: 'var(--fs-body)',
+            marginTop: '10px',
+            fontSize: 'var(--fs-lead)',
             color: 'var(--ink-3)',
             lineHeight: 1.5,
-            maxWidth: '640px',
+            maxWidth: '70ch',
+            fontWeight: 'var(--fw-reg)',
           }}>
             {subtitle}
           </p>

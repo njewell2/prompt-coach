@@ -5,7 +5,7 @@ export const CHALLENGES: Challenge[] = [
     id: 'b1', tier: 'beginner', order: 1,
     title: 'Just Ask',
     structural_task: 'Write a prompt that asks the AI to summarize the meeting notes above.',
-    brief: 'The simplest prompts often fail because they are too vague. A good prompt leaves no room for the model to guess — it states the task, the subject, and the desired outcome in clear, direct language.',
+    brief: 'The simplest prompts often fail because they are too vague. A good prompt leaves no room for the model to guess: it states the task, the subject, and the desired outcome in clear, direct language.',
     topic_prompt: '',
     topic_examples: [],
     focus_dimensions: ['clarity'],
@@ -13,7 +13,7 @@ export const CHALLENGES: Challenge[] = [
     hint: "Start with a strong action verb (Summarize, Extract, Identify). Say exactly how long the summary should be, what it should include, and who it's for.",
     unlock_after: null,
     sample_content: {
-      label: 'Meeting notes — Q3 product planning',
+      label: 'Meeting notes: Q3 product planning',
       body: `Attendees: Priya (PM), Marcus (Eng lead), Dana (Design), Tom (Sales)
 
 1. Pricing rework is the #1 request from enterprise prospects. Dana has mockups of a new pricing page; Tom says 3 of our last 5 lost deals cited unclear pricing.
@@ -39,7 +39,7 @@ Action items: Priya → Stripe legal status by Mon; Dana → pricing page v2 by 
     hint: 'Include: who you are (role/experience), the specific situation, what you\'ve already considered, and who AI should act as (e.g. an experienced manager, a coaching expert).',
     unlock_after: 'b1',
     sample_content: {
-      label: 'Scenario — a hard 1:1 on Wednesday',
+      label: 'Scenario: a hard 1:1 on Wednesday',
       body: `You are a second-year team lead managing four analysts. One of them, Alex, has been a strong contributor for two years but has missed three consecutive deadlines this quarter and has gone noticeably quiet in team meetings. Peers are starting to pick up the slack; you're hearing grumbling. You have a 1:1 with Alex scheduled for Wednesday. You've never had to give hard feedback before and don't want this to blow up — or be swept under the rug.`,
       goal: 'You want practical advice on how to approach the Wednesday conversation with Alex.',
     },
@@ -48,7 +48,7 @@ Action items: Priya → Stripe legal status by Mon; Dana → pricing page v2 by 
     id: 'b3', tier: 'beginner', order: 3,
     title: 'Shape the Output',
     structural_task: 'Write a prompt that produces a structured summary of the support tickets above.',
-    brief: "Without output instructions, AI picks a format for you — and it may not be what you need. Specifying the exact output format (table, bullets, sections, length) and the boundaries (what to include, what to skip) dramatically improves usability.",
+    brief: "Without output instructions, AI picks a format for you, and it may not be what you need. Specifying the exact output format (table, bullets, sections, length) and the boundaries (what to include, what to skip) dramatically improves usability.",
     topic_prompt: '',
     topic_examples: [],
     focus_dimensions: ['output'],
@@ -56,7 +56,7 @@ Action items: Priya → Stripe legal status by Mon; Dana → pricing page v2 by 
     hint: 'Tell the model the format (table with these columns, bullets, etc.), the length (N rows or N bullets max), and what to exclude (e.g. skip thank-you notes).',
     unlock_after: 'b2',
     sample_content: {
-      label: 'Customer support tickets — last 7 days',
+      label: 'Customer support tickets: last 7 days',
       body: `1. "Love the new dashboard but export is still broken — third week in a row."
 2. "Can't log in on mobile, says session expired over and over. URGENT."
 3. "Thank you!! The team solved my billing issue in under an hour, amazing service."
@@ -75,7 +75,7 @@ Action items: Priya → Stripe legal status by Mon; Dana → pricing page v2 by 
     topic_examples: [],
     focus_dimensions: ['examples'],
     secondary_dimensions: ['output'],
-    hint: 'Include at least one input/output example pair in your prompt. Show the exact format you want the output to follow — the model will match your pattern.',
+    hint: 'Include at least one input/output example pair in your prompt. Show the exact format you want the output to follow, and the model will match your pattern.',
     unlock_after: 'b3',
     sample_content: {
       label: "Raw notes from today's 1:1s",
@@ -97,7 +97,7 @@ met w/ Priya @ 11: pricing rollout now delayed by 2 wks, wants me to tell sales 
     hint: 'Instruct the model to reason step by step before answering. Break the task into phases: "First, list possible causes. Then, rank them by likelihood. Finally, suggest how to test the top two."',
     unlock_after: 'b5',
     sample_content: {
-      label: 'Troubleshooting — sudden pipeline drop',
+      label: 'Troubleshooting: sudden pipeline drop',
       body: `Our marketing-qualified lead (MQL) pipeline usually delivers around 100 leads per month to sales. Last month it delivered 12. Nothing obvious broke: the website is up, the forms submit, Salesforce is receiving data, and marketing ran the same campaigns as always. Sales is escalating fast and the VP wants answers tomorrow.`,
       goal: 'You want AI to walk through possible causes systematically and tell you what to check first.',
     },
@@ -106,7 +106,7 @@ met w/ Priya @ 11: pricing rollout now delayed by 2 wks, wants me to tell sales 
     id: 'i2', tier: 'intermediate', order: 2,
     title: 'Meeting to Action',
     structural_task: 'Write a prompt that extracts and prioritizes action items from the meeting notes above.',
-    brief: "Extracting structured decisions from raw text requires the model to understand your prioritization criteria, the output format, and any constraints — like ignoring discussion that didn't result in a commitment. This combines clarity, output shape, and boundaries.",
+    brief: "Extracting structured decisions from raw text requires the model to understand your prioritization criteria, the output format, and any constraints, like ignoring discussion that didn't result in a commitment. This combines clarity, output shape, and boundaries.",
     topic_prompt: '',
     topic_examples: [],
     focus_dimensions: ['clarity', 'output'],
@@ -114,7 +114,7 @@ met w/ Priya @ 11: pricing rollout now delayed by 2 wks, wants me to tell sales 
     hint: 'Specify what counts as an action item, how to rank priority (business impact? urgency?), what to exclude (unassigned ideas, backlog grooming), and the exact output fields (owner, deadline, priority).',
     unlock_after: 'b6',
     sample_content: {
-      label: 'Meeting notes — Q3 product planning',
+      label: 'Meeting notes: Q3 product planning',
       body: `Attendees: Priya (PM), Marcus (Eng lead), Dana (Design), Tom (Sales)
 
 1. Pricing rework is the #1 request from enterprise prospects. Dana has mockups of a new pricing page; Tom says 3 of our last 5 lost deals cited unclear pricing.
@@ -125,7 +125,7 @@ met w/ Priya @ 11: pricing rollout now delayed by 2 wks, wants me to tell sales 
 
 Decisions: fix-it sprint approved contingent on legal finishing Stripe review first. Priya to follow up with legal Monday.
 Action items: Priya → Stripe legal status by Mon; Dana → pricing page v2 by next Thurs; Marcus → contract-to-hire proposal by Wed.`,
-      goal: 'You want a prioritized action-item list with owner, deadline, and priority — ready to paste into your project tracker.',
+      goal: 'You want a prioritized action-item list with owner, deadline, and priority, ready to paste into your project tracker.',
     },
   },
   {
@@ -140,7 +140,7 @@ Action items: Priya → Stripe legal status by Mon; Dana → pricing page v2 by 
     hint: 'Tell AI what you\'re preparing for (a QBR?), give one example of a theme with its supporting quotes, set a minimum evidence threshold (e.g. at least 2 comments per theme), and define the output shape.',
     unlock_after: 'i2',
     sample_content: {
-      label: 'NPS survey comments — last quarter',
+      label: 'NPS survey comments: last quarter',
       body: `1. The product has replaced three tools for us. Pricing is high but we can justify it for now. — SaaS Co
 2. Love it, but the mobile experience still feels like an afterthought. — Finance team
 3. Support is excellent. Documentation is not. — Engineering lead
@@ -166,7 +166,7 @@ Action items: Priya → Stripe legal status by Mon; Dana → pricing page v2 by 
     hint: 'Assign a risk-reviewer role (procurement analyst, vendor-risk specialist), ask the model to reason through risks by category first, then output a severity-rated table.',
     unlock_after: 'i5',
     sample_content: {
-      label: 'Vendor proposal — data warehousing contract',
+      label: 'Vendor proposal: data warehousing contract',
       body: `VENDOR: DataSphere Inc. (Series B, ~80 employees, founded 2019)
 CONTRACT: 3-year commitment, $240K/yr, pre-paid annually (total $720K)
 TERM: Auto-renewing 3-year term with 120-day exit notice
@@ -193,7 +193,7 @@ REFERENCES: Two customers provided; one is a sister company of the vendor's CEO`
     hint: 'Assign a specialist reviewer role, show an example of what a "gap" or "inconsistency" looks like, ask for findings categorized by severity, and decompose into review phases (scope → gaps → conflicts → vague language).',
     unlock_after: 'i4',
     sample_content: {
-      label: 'Security policy — employee device access (draft v2)',
+      label: 'Security policy: employee device access (draft v2)',
       body: `SCOPE: All employees and contractors with company device access.
 
 POLICY:
@@ -207,14 +207,14 @@ POLICY:
 
 ENFORCEMENT: IT reserves the right to audit devices upon suspicion of policy violation.
 EFFECTIVE: Upon CEO signature.`,
-      goal: 'You want a senior-reviewer-level critique flagging gaps, inconsistencies, and vague enforceability — before this goes company-wide.',
+      goal: 'You want a senior-reviewer-level critique flagging gaps, inconsistencies, and vague enforceability, before this goes company-wide.',
     },
   },
   {
     id: 'a5', tier: 'advanced', order: 5,
     title: 'Incident Analysis',
     structural_task: 'Write a prompt that produces a blameless post-mortem from the incident timeline above.',
-    brief: "Post-mortems require causal reasoning, structured output, and careful constraints around blame versus systems analysis. This is the capstone — all five areas must work together to produce a document the whole company can learn from.",
+    brief: "Post-mortems require causal reasoning, structured output, and careful constraints around blame versus systems analysis. This is the capstone: all five areas must work together to produce a document the whole company can learn from.",
     topic_prompt: '',
     topic_examples: [],
     focus_dimensions: ['clarity', 'context', 'output', 'examples', 'thinking'],
@@ -222,7 +222,7 @@ EFFECTIVE: Upon CEO signature.`,
     hint: 'Assign a retrospective-facilitator role, explicitly constrain to blameless analysis (critique systems, not individuals), and decompose into: timeline → root cause → contributing factors → impact → remediation → prevention.',
     unlock_after: 'a1',
     sample_content: {
-      label: 'Incident timeline — payment processing outage',
+      label: 'Incident timeline: payment processing outage',
       body: `DURATION: 2h 47m outage (Tues 09:12–11:59 ET)
 IMPACT: ~4,300 customer transactions failed; $180K in blocked payments
 
@@ -248,11 +248,11 @@ OBSERVATIONS: No pre-deploy load test was run. Rollback docs were last updated i
 export const CHALLENGE_MAP = new Map(CHALLENGES.map(c => [c.id, c]))
 
 export const DIMENSION_META: Record<string, { name: string; shortName: string; description: string }> = {
-  clarity:  { name: 'Clarity',  shortName: 'Clarity',  description: 'Say exactly what you want — strong verb, specific subject, no guessing.' },
-  context:  { name: 'Context',  shortName: 'Context',  description: 'Set the scene — who you are, who AI should be, what the situation is.' },
-  output:   { name: 'Output',   shortName: 'Output',   description: 'Shape the result — format, length, structure, what to include or avoid.' },
-  examples: { name: 'Examples', shortName: 'Examples', description: "Show don't tell — give input/output pairs so AI matches the pattern." },
-  thinking: { name: 'Thinking', shortName: 'Thinking', description: 'Guide the process — ask for step-by-step or break the job into phases.' },
+  clarity:  { name: 'Clarity',  shortName: 'Clarity',  description: 'Say exactly what you want: strong verb, specific subject, no guessing.' },
+  context:  { name: 'Context',  shortName: 'Context',  description: 'Set the scene: who you are, who AI should be, what the situation is.' },
+  output:   { name: 'Output',   shortName: 'Output',   description: 'Shape the result: format, length, structure, what to include or avoid.' },
+  examples: { name: 'Examples', shortName: 'Examples', description: "Show don't tell: give input/output pairs so AI matches the pattern." },
+  thinking: { name: 'Thinking', shortName: 'Thinking', description: 'Guide the process: ask for step-by-step or break the job into phases.' },
 }
 
 const FOCUS_PREFIX_MAX_INDEX = 5

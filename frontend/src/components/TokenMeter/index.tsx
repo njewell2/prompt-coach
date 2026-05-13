@@ -18,13 +18,13 @@ export function TokenMeter({ tokens, analysisMs, executionMs }: TokenMeterProps)
       gap: '16px',
       flexWrap: 'wrap',
       padding: '10px 16px',
-      background: 'var(--bg-secondary)',
+      background: 'var(--surface-quiet)',
       borderRadius: 'var(--radius-md)',
       border: '1px solid var(--border)',
-      fontSize: '12px',
-      color: 'var(--text-muted)',
+      fontSize: 'var(--fs-micro)',
+      color: 'var(--ink-3)',
     }}>
-      <span style={{ fontWeight: 'var(--fw-semi)', color: 'var(--text-secondary)' }}>Tokens used:</span>
+      <span style={{ fontWeight: 'var(--fw-semi)', color: 'var(--ink-2)' }}>Tokens used:</span>
       <span>{tokens.input.toLocaleString()} in</span>
       <span>·</span>
       <span>{tokens.output.toLocaleString()} out</span>
@@ -37,10 +37,10 @@ export function TokenMeter({ tokens, analysisMs, executionMs }: TokenMeterProps)
         </>
       )}
       <span>·</span>
-      <span style={{ color: 'var(--text-secondary)' }}>{total.toLocaleString()} total</span>
+      <span style={{ color: 'var(--ink-2)' }}>{total.toLocaleString()} total</span>
       {analysisMs && (
         <>
-          <span style={{ marginLeft: 'auto', color: 'var(--text-muted)' }}>
+          <span style={{ marginLeft: 'auto', color: 'var(--ink-3)' }}>
             {(analysisMs / 1000).toFixed(1)}s
           </span>
         </>

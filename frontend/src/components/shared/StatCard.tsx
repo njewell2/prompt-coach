@@ -22,10 +22,13 @@ export function StatCard({ label, value, sub, accent = 'none' }: StatCardProps) 
         {label}
       </div>
       <div style={{
-        fontSize: '26px',
+        fontSize: 'clamp(24px, 6vw, 30px)',
         fontWeight: 'var(--fw-bold)',
         color: 'var(--ink)',
-        lineHeight: 1.1,
+        lineHeight: 1.05,
+        letterSpacing: 'var(--tracking-tight)',
+        fontVariantNumeric: 'tabular-nums',
+        wordBreak: 'break-word',
       }}>
         {value}
       </div>
