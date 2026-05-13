@@ -10,8 +10,8 @@ ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")
 
 BEDROCK_SONNET = "us.anthropic.claude-sonnet-4-5-20250929-v1:0"
 BEDROCK_HAIKU  = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
-DIRECT_SONNET  = "claude-sonnet-4-5-20241022"
-DIRECT_HAIKU   = "claude-haiku-4-5-20251001"
+DIRECT_SONNET  = "claude-sonnet-4-5"
+DIRECT_HAIKU   = "claude-haiku-4-5"
 
 _CLIENT_TTL_SEC = 50 * 60
 _client_cache: dict = {"client": None, "created": 0.0}

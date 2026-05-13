@@ -7,7 +7,7 @@ import { useProgress } from '@/hooks/useProgress'
 import { Button } from '@/components/shared/Button'
 import { ErrorBanner } from '@/components/shared/ErrorBanner'
 import { Card } from '@/components/shared/Card'
-import { AnalysisLoadingState, ResponseCardShimmer, ScoreCardShimmer, Shimmer } from '@/components/shared/LoadingShimmer'
+import { AnalysisLoadingState, HeroShimmer, ResponseCardShimmer, ScoreCardShimmer, Shimmer } from '@/components/shared/LoadingShimmer'
 import { ScoreDisplay } from '@/components/ScoreDisplay'
 import { DimensionCard } from '@/components/DimensionCard'
 import { MarkdownText } from '@/components/shared/MarkdownText'
@@ -593,45 +593,57 @@ export function ChallengeView() {
             </div>
           </div>
 
-          {/* Hero + rail — focused dimension is the hero, others collapse to a list.
-              Variation IS the hierarchy (per DESIGN.md "Don't render identical-looking card grids"). */}
+          {/* Hero + rail — the challenge's focus dimension is locked to the hero
+              slot from the start; non-focus dimensions stream into the rail as they
+              arrive. The hero never flips between dimensions while streaming. */}
           {(() => {
-            const focusedSet = new Set(challenge.focus_dimensions)
+            const focusId = challenge.focus_dimensions[0]
             const allDims = displayResult.dimensions
-            const focused = allDims.filter(d => focusedSet.has(d.id))
-            // If the challenge has no explicit focus, surface the lowest-scoring dimension
-            // (that's where the user most needs the coach's voice).
-            const hero = focused[0] ?? [...allDims].sort((a, b) => a.score - b.score)[0]
-            const rail = hero ? allDims.filter(d => d.id !== hero.id) : []
-            const heroLabel = focused[0] ? 'The challenge focus area' : 'Where to focus next'
+            const focusHero = focusId ? allDims.find(d => d.id === focusId) : undefined
 
-            if (!hero) {
-              return (
-                <div style={{ marginBottom: '32px' }}>
-                  <ScoreCardShimmer />
-                </div>
-              )
-            }
+            // Without an explicit focus_dimensions, defer hero pick until streaming
+            // is complete, then surface the lowest-scoring dimension as the coach
+            // foothold. (No production challenge currently hits this branch.)
+            const fallbackHero = !focusId && !displayResult.streaming
+              ? [...allDims].sort((a, b) => a.score - b.score)[0]
+              : undefined
+
+            const hero = focusHero ?? fallbackHero
+            const rail = hero
+              ? allDims.filter(d => d.id !== hero.id)
+              : focusId
+                ? allDims.filter(d => d.id !== focusId)
+                : allDims
+
+            const heroLabel = focusId ? 'The challenge focus area' : 'Where to focus next'
+            const showHeroSlot = focusId !== undefined || hero !== undefined
 
             return (
               <div style={{ marginBottom: '32px' }}>
-                <div style={{
-                  fontSize: 'var(--fs-micro)',
-                  fontWeight: 'var(--fw-semi)',
-                  color: 'var(--ink-3)',
-                  letterSpacing: '0.08em',
-                  textTransform: 'uppercase',
-                  marginBottom: '8px',
-                }}>
-                  {heroLabel}
-                </div>
-
-                <DimensionCard
-                  key={hero.id}
-                  dimension={hero}
-                  variant="hero"
-                  animationDelay={0}
-                />
+                {showHeroSlot && (
+                  <>
+                    <div style={{
+                      fontSize: 'var(--fs-micro)',
+                      fontWeight: 'var(--fw-semi)',
+                      color: 'var(--ink-3)',
+                      letterSpacing: '0.08em',
+                      textTransform: 'uppercase',
+                      marginBottom: '8px',
+                    }}>
+                      {heroLabel}
+                    </div>
+                    {hero ? (
+                      <DimensionCard
+                        key={hero.id}
+                        dimension={hero}
+                        variant="hero"
+                        animationDelay={0}
+                      />
+                    ) : (
+                      <HeroShimmer />
+                    )}
+                  </>
+                )}
 
                 {rail.length > 0 && (
                   <Card padding={24} style={{ marginTop: '24px' }}>
@@ -655,12 +667,6 @@ export function ChallengeView() {
                     </div>
                   </Card>
                 )}
-
-                {displayResult.streaming && allDims.length < 5 && (
-                  <div style={{ marginTop: '12px' }}>
-                    <ScoreCardShimmer />
-                  </div>
-                )}
               </div>
             )
           })()}
@@ -669,9 +675,10 @@ export function ChallengeView() {
               fill in each section as data arrives. On a persisted revisit with no cached
               expert data, we skip rendering this entirely; the user can re-submit to
               regenerate it instead of staring at empty shimmers. */}
-          {(displayResult.source === 'fresh' || exec.isRevealing || exec.revealData || exec.userExec.phase !== 'idle' || exec.expertExec.phase !== 'idle') && (
+          {(displayResult.source === 'fresh' || exec.isRevealing || exec.revealData || exec.revealError || exec.userExec.phase !== 'idle' || exec.expertExec.phase !== 'idle') && (
             <ExpertComparison
               revealData={exec.revealData}
+              revealError={exec.revealError}
               userExec={exec.userExec}
               expertExec={exec.expertExec}
             />
@@ -750,10 +757,12 @@ function StepBlock({
 
 function ExpertComparison({
   revealData,
+  revealError,
   userExec,
   expertExec,
 }: {
   revealData: ReturnType<typeof useExecute>['revealData']
+  revealError: ReturnType<typeof useExecute>['revealError']
   userExec: StreamState
   expertExec: StreamState
 }) {
@@ -794,6 +803,8 @@ function ExpertComparison({
           }}>
             {revealData.improved_prompt}
           </pre>
+        ) : revealError ? (
+          <ErrorBanner message={`The expert prompt couldn't be generated: ${revealError}. Re-submit your prompt to try again.`} />
         ) : (
           <div style={{
             background: 'var(--surface-quiet)', borderRadius: 'var(--radius-md)',
@@ -808,14 +819,16 @@ function ExpertComparison({
         )}
       </div>
 
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(min(380px, 100%), 1fr))',
-        gap: '16px',
-      }}>
-        <ResponseCard title="AI Response to Your Prompt" stream={userExec} placeholder={!revealData || userExec.phase === 'idle'} />
-        <ResponseCard title="AI Response to Expert Prompt" stream={expertExec} placeholder={!revealData} />
-      </div>
+      {!revealError && (
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(380px, 100%), 1fr))',
+          gap: '16px',
+        }}>
+          <ResponseCard title="AI Response to Your Prompt" stream={userExec} placeholder={!revealData || userExec.phase === 'idle'} />
+          <ResponseCard title="AI Response to Expert Prompt" stream={expertExec} placeholder={!revealData} />
+        </div>
+      )}
     </div>
   )
 }
