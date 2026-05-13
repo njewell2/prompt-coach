@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { LeaderboardRow, LeaderboardTopResponse } from '@/types'
-import { CapTechLogo } from '@/components/shared/CapTechLogo'
 import { Icon } from '@/components/shared/Icon'
 
 const POLL_MS = 3000
@@ -34,7 +33,7 @@ export function FacilitatorLeaderboard() {
     for (const r of data.top) {
       const rank = r.rank ?? 0
       const prev = prevState.current.get(r.username)
-      if (prev && (prev.xp !== r.xp || prev.rank !== rank)) {
+      if (prev && prev.rank !== rank) {
         changed.add(r.username)
       }
     }
@@ -75,16 +74,13 @@ export function FacilitatorLeaderboard() {
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           marginBottom: '18px', flexWrap: 'wrap', gap: '12px',
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <CapTechLogo color="#fff" height={22} />
-            <h1 className="pc-flb-title" style={{
-              fontSize: '28px', fontWeight: 'var(--fw-bold)', margin: 0,
-              letterSpacing: '-0.01em',
-              color: '#fff',
-            }}>
-              Leaderboard
-            </h1>
-          </div>
+          <h1 className="pc-flb-title" style={{
+            fontSize: '28px', fontWeight: 'var(--fw-bold)', margin: 0,
+            letterSpacing: '-0.01em',
+            color: '#fff',
+          }}>
+            Leaderboard
+          </h1>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
             <div style={{ fontSize: 'var(--fs-small)', color: 'rgba(255,255,255,0.6)' }}>
               {data ? `${data.total} participants` : 'Loading…'}

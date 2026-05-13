@@ -20,25 +20,17 @@ export function NextChallengePill({ title, nextNumber, totalChallenges, onClick 
   if (dismissed) return null
 
   return (
-    <div
-      className="pc-next-pill-overlay"
-      style={{
-        position: 'fixed',
-        inset: 0,
-        pointerEvents: 'none',
-        zIndex: 8500,
-      }}
-    >
+    <>
       <style>{`
         @keyframes pc-next-pill-rise {
           0%   { opacity: 0; transform: translateY(12px); }
           100% { opacity: 1; transform: translateY(0); }
         }
         .pc-next-pill {
-          position: absolute;
+          position: fixed;
           bottom: 24px;
           right: 24px;
-          pointer-events: auto;
+          z-index: 8500;
           display: inline-flex;
           align-items: center;
           gap: 12px;
@@ -51,14 +43,13 @@ export function NextChallengePill({ title, nextNumber, totalChallenges, onClick 
           border: none;
           font-family: inherit;
           opacity: 0;
-          transition: transform 120ms ease-out, box-shadow 120ms ease-out;
+          transition: box-shadow 120ms ease-out;
           max-width: calc(100vw - 48px);
         }
         .pc-next-pill.is-visible {
           animation: pc-next-pill-rise 220ms ease-out forwards;
         }
         .pc-next-pill:hover {
-          transform: translateY(-2px);
           box-shadow: 0 16px 36px rgba(15, 23, 42, 0.28);
         }
         .pc-next-pill-eyebrow {
@@ -94,14 +85,13 @@ export function NextChallengePill({ title, nextNumber, totalChallenges, onClick 
           justify-content: center;
           padding: 0;
           font-family: inherit;
-          pointer-events: auto;
         }
         .pc-next-pill-dismiss:hover {
           background: #000;
         }
         @media (max-width: 720px) {
           .pc-next-pill {
-            bottom: 16px;
+            bottom: max(env(safe-area-inset-bottom), 16px);
             right: 16px;
             padding: 10px 14px 10px 16px;
             gap: 10px;
@@ -141,6 +131,6 @@ export function NextChallengePill({ title, nextNumber, totalChallenges, onClick 
           <Icon.Close size={11} />
         </button>
       </div>
-    </div>
+    </>
   )
 }

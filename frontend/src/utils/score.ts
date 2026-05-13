@@ -2,16 +2,16 @@ export type ScoreLabel = 'Exceptional' | 'Strong' | 'Developing' | 'Needs Work' 
 
 export function scoreLabel(score: number, outOf100 = false): ScoreLabel {
   const n = outOf100 ? score : score * 10
-  if (n >= 90) return 'Exceptional'
+  if (n >= 85) return 'Exceptional'
   if (n >= 75) return 'Strong'
   if (n >= 55) return 'Developing'
   if (n >= 35) return 'Needs Work'
   return 'Foundational'
 }
 
-/** Convert an overall 0-100 score to a 0-10 display score */
+/** Convert an overall 0-100 score to a 0-10 display score with one decimal */
 export function toDisplayScore(score: number): number {
-  return Math.round(score / 10)
+  return Math.round(score) / 10
 }
 
 export function scoreColor(score: number, outOf100 = false): string {
@@ -35,8 +35,11 @@ export function deltaColor(delta: number): string {
 }
 
 export function formatDelta(delta: number): string {
-  if (delta > 0) return `+${delta} ↑`
-  if (delta < 0) return `${delta} ↓`
+  const rounded = Math.round(delta * 10) / 10
+  // Drop trailing .0 so integer-valued deltas (e.g. dimension scores) stay tidy.
+  const text = Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1)
+  if (rounded > 0) return `+${text} ↑`
+  if (rounded < 0) return `${text} ↓`
   return '—'
 }
 

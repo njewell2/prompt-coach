@@ -71,12 +71,8 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
   }, [user, refresh])
 
   const isUnlocked = useCallback((challengeId: string): boolean => {
-    const challenge = CHALLENGES.find(c => c.id === challengeId)
-    if (!challenge) return false
-    if (!challenge.unlock_after) return true
-    const prev = progress.get(challenge.unlock_after)
-    return (prev?.best_score ?? 0) >= 75
-  }, [progress])
+    return CHALLENGES.some(c => c.id === challengeId)
+  }, [])
 
   const addAttempt = useCallback((
     challengeId: string,
@@ -113,7 +109,7 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
         attempts,
         best_score: best,
         passed: best >= 75,
-        gold: best >= 90,
+        gold: best >= 85,
       })
       return next
     })

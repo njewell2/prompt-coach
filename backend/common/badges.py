@@ -41,7 +41,7 @@ def compute_badges(user_id: int) -> dict:
         if meta.get("dim_id"):
             mastered_dims.add(meta["dim_id"])
 
-    beginner_gold = sum(1 for cid in BEGINNER_IDS if best_by_challenge.get(cid, 0) >= 90)
+    beginner_gold = sum(1 for cid in BEGINNER_IDS if best_by_challenge.get(cid, 0) >= 85)
     total_passed = sum(1 for cid in ALL_CHALLENGE_IDS if best_by_challenge.get(cid, 0) >= 75)
     dim_count = len(mastered_dims)
 
@@ -49,7 +49,7 @@ def compute_badges(user_id: int) -> dict:
         "golden_beginner": {
             "earned": beginner_gold >= len(BEGINNER_IDS),
             "label": "Golden Beginner",
-            "description": f"Score gold ({90}+) on all {len(BEGINNER_IDS)} beginner challenges.",
+            "description": f"Score gold ({85}+) on all {len(BEGINNER_IDS)} beginner challenges.",
             "progress": {"current": beginner_gold, "target": len(BEGINNER_IDS)},
         },
         "dimension_master": {

@@ -2,7 +2,6 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { Header } from '@/components/layout/Header'
 import { LevelMap } from '@/components/LevelMap'
 import { ChallengeView } from '@/components/ChallengeView'
-import { FreePractice } from '@/components/FreePractice'
 import { ProgressDashboard } from '@/components/ProgressDashboard'
 import { ErrorBoundary } from '@/components/shared/ErrorBoundary'
 import { LoginScreen } from '@/components/LoginScreen'
@@ -46,7 +45,6 @@ function AuthenticatedApp() {
         <Routes>
           <Route path="/" element={<LevelMap />} />
           <Route path="/challenge/:id" element={<ChallengeView />} />
-          <Route path="/practice" element={<FreePractice />} />
           <Route path="/progress" element={<ProgressDashboard />} />
           <Route path="*" element={<LevelMap />} />
         </Routes>

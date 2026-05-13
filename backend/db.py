@@ -187,7 +187,7 @@ def get_user_progress(user_id: int) -> dict:
     for cid, p in challenges.items():
         best = p["best_score"]
         p["passed"] = best >= 75
-        p["gold"] = best >= 90
+        p["gold"] = best >= 85
 
     return challenges
 
@@ -340,8 +340,9 @@ def leaderboard_rows() -> list[dict]:
         }
         for r in rows
     ]
-    # sort: XP desc, then last_activity desc (most recent wins tiebreak)
-    result.sort(key=lambda r: (-r["xp"], -r["last_activity"]))
+    # sort: XP desc, then last_activity desc, then user_id asc as a stable tiebreaker
+    # so equal-XP/idle users don't swap order between polls (which would cause UI pulses).
+    result.sort(key=lambda r: (-r["xp"], -r["last_activity"], r["user_id"]))
     return result
 
 

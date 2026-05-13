@@ -20,7 +20,7 @@ export function ScoreDisplay({ score, size = 120, showLabel = true, label }: Sco
     function tick(now: number) {
       const t = Math.min((now - start) / duration, 1)
       const eased = 1 - Math.pow(1 - t, 3)
-      setDisplayed(Math.round(eased * displayScore))
+      setDisplayed(eased * displayScore)
       if (t < 1) frame = requestAnimationFrame(tick)
     }
 
@@ -56,8 +56,8 @@ export function ScoreDisplay({ score, size = 120, showLabel = true, label }: Sco
           display: 'flex', flexDirection: 'column',
           alignItems: 'center', justifyContent: 'center',
         }}>
-          <span style={{ fontSize: size * 0.25, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1 }}>
-            {displayed}
+          <span style={{ fontSize: size * 0.22, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
+            {displayed.toFixed(1)}
           </span>
           <span style={{ fontSize: size * 0.11, color: 'var(--text-muted)', lineHeight: 1, marginTop: '1px' }}>
             / 10

@@ -18,7 +18,7 @@ function nodeState(
   isNext: boolean,
 ): NodeState {
   if (!unlocked) return 'locked'
-  if (bestScore >= 90) return 'gold'
+  if (bestScore >= 85) return 'gold'
   if (bestScore >= 75) return 'passed'
   if (isNext) return 'next'
   if (attempted) return 'next'
@@ -148,20 +148,26 @@ export function LevelMap() {
             {challengeNumber === 9 && <SectionDivider label="Combine all five" />}
 
             <div
-              onClick={() => unlocked && navigate(`/challenge/${challenge.id}`)}
+              onClick={() => navigate(`/challenge/${challenge.id}`)}
               style={{
                 display: 'flex', alignItems: 'center', gap: '16px',
                 padding: '10px 12px',
                 borderRadius: 'var(--radius-lg)',
-                cursor: unlocked ? 'pointer' : 'default',
+                cursor: 'pointer',
                 opacity: state === 'locked' ? 0.45 : 1,
-                transition: 'background 0.15s',
+                transition: 'background 0.15s, box-shadow 0.15s, transform 0.15s',
               }}
               onMouseEnter={e => {
-                if (unlocked) (e.currentTarget as HTMLDivElement).style.background = 'var(--bg-card-hover)'
+                const el = e.currentTarget as HTMLDivElement
+                el.style.background = 'var(--bg-card-hover)'
+                el.style.boxShadow = 'var(--shadow-card)'
+                el.style.transform = 'translateY(-1px)'
               }}
               onMouseLeave={e => {
-                (e.currentTarget as HTMLDivElement).style.background = 'transparent'
+                const el = e.currentTarget as HTMLDivElement
+                el.style.background = 'transparent'
+                el.style.boxShadow = 'none'
+                el.style.transform = 'translateY(0)'
               }}
             >
               <NodeCircle state={state} />
@@ -196,14 +202,6 @@ export function LevelMap() {
                     </span>
                   )}
                 </div>
-                <div style={{
-                  fontSize: 'var(--fs-small)',
-                  color: state === 'locked' ? 'var(--ink-4)' : 'var(--ink-3)',
-                  marginTop: '2px',
-                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                }}>
-                  {challenge.structural_task}
-                </div>
               </div>
             </div>
 
@@ -218,38 +216,6 @@ export function LevelMap() {
         )
       })}
 
-      {/* Free Practice CTA */}
-      <div style={{
-        marginTop: '32px',
-        padding: '20px 24px',
-        background: 'var(--captech-navy)',
-        borderRadius: 'var(--radius-lg)',
-        borderLeft: 'var(--accent-left-gold)',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        gap: '16px', flexWrap: 'wrap',
-      }}>
-        <div>
-          <div style={{ fontSize: 'var(--fs-h3)', fontWeight: 'var(--fw-bold)', color: '#fff', marginBottom: '4px' }}>
-            Free Practice
-          </div>
-          <div style={{ fontSize: 'var(--fs-small)', color: 'rgba(255,255,255,0.7)' }}>
-            Submit any prompt and see the AI-improved version instantly.
-          </div>
-        </div>
-        <button
-          onClick={() => navigate('/practice')}
-          style={{
-            background: 'var(--captech-yellow)', color: 'var(--captech-navy)',
-            border: 'none', borderRadius: 'var(--radius-md)',
-            padding: '10px 18px', fontSize: 'var(--fs-body)', fontWeight: 'var(--fw-semi)',
-            cursor: 'pointer', whiteSpace: 'nowrap',
-            display: 'inline-flex', alignItems: 'center', gap: '6px',
-            minHeight: '40px',
-          }}
-        >
-          Open <Icon.ArrowRight size={15} />
-        </button>
-      </div>
     </div>
   )
 }

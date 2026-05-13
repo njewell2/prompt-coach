@@ -1,11 +1,13 @@
 import { Icon } from '@/components/shared/Icon'
+import { Button } from '@/components/shared/Button'
 
 interface ErrorBannerProps {
   message: string
   onDismiss?: () => void
+  onRetry?: () => void
 }
 
-export function ErrorBanner({ message, onDismiss }: ErrorBannerProps) {
+export function ErrorBanner({ message, onDismiss, onRetry }: ErrorBannerProps) {
   const isAuth = message.toLowerCase().includes('aws') || message.toLowerCase().includes('credential')
   const IconComp = isAuth ? Icon.Key : Icon.Alert
   const accent = isAuth ? 'var(--score-mid)' : 'var(--score-low)'
@@ -31,6 +33,13 @@ export function ErrorBanner({ message, onDismiss }: ErrorBannerProps) {
         <p style={{ fontSize: 'var(--fs-small)', color: 'var(--ink-2)', fontFamily: isAuth ? 'var(--font-mono)' : undefined }}>
           {message}
         </p>
+        {onRetry && (
+          <div style={{ marginTop: '10px' }}>
+            <Button variant="secondary" size="sm" onClick={onRetry}>
+              Resubmit
+            </Button>
+          </div>
+        )}
       </div>
       {onDismiss && (
         <button
