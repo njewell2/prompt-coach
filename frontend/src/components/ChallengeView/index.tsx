@@ -10,7 +10,7 @@ import { AnalysisLoadingState, ResponseCardShimmer, ScoreCardShimmer, Shimmer } 
 import { ScoreDisplay } from '@/components/ScoreDisplay'
 import { DimensionCard } from '@/components/DimensionCard'
 import { MarkdownText } from '@/components/shared/MarkdownText'
-import { scoreLabel, scoreColor, toDisplayScore, deltaColor, formatDelta } from '@/utils/score'
+import { scoreLabel, scoreColor, toDisplayScore } from '@/utils/score'
 import { CHALLENGES, CHALLENGE_MAP, DIMENSION_META, challengeDisplayTitle } from '@/data/challenges'
 import { XpFloaters, type XpFloat } from '@/components/feedback/XpFloater'
 import { BadgeToasts } from '@/components/feedback/BadgeToast'
@@ -166,8 +166,8 @@ export function ChallengeView() {
       // Choreography: at most two motions on screen at any moment.
       // 0ms      pass-banner appears in flow + XP floaters rise from the score card
       // ~1500ms  XP floaters have settled, badge toast slides in (if any)
-      // ~2200ms  badge toast settled; confetti fires once on gold (≥90)
-      const isGold = (res.overall_score ?? 0) >= 90
+      // ~2200ms  badge toast settled; confetti fires once on gold (≥85)
+      const isGold = (res.overall_score ?? 0) >= 85
       const newBadges = Array.isArray(res.new_badges) ? res.new_badges : []
       const xpEarned = Array.isArray(res.xp_earned) ? res.xp_earned : []
 
@@ -186,7 +186,6 @@ export function ChallengeView() {
           setToastBadges(prev => [...prev, ...newBadges])
         }, delay)
       }
-
       if (isGold) {
         const goldDelay = newBadges.length > 0 ? 2200 : (xpEarned.length > 0 ? 1500 : 0)
         window.setTimeout(() => {
@@ -297,7 +296,6 @@ export function ChallengeView() {
           onKeyDown={e => {
             if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleSubmit()
           }}
-          placeholder='Example: "Summarize the meeting notes in 3 bullet points for my VP…"'
           rows={6}
           style={{
             width: '100%', padding: '14px',
@@ -370,7 +368,7 @@ export function ChallengeView() {
       </StepBlock>
 
       {/* Error */}
-      {error && <div style={{ marginBottom: '24px' }}><ErrorBanner message={error} onDismiss={reset} /></div>}
+      {error && <div style={{ marginBottom: '24px' }}><ErrorBanner message={error} onDismiss={reset} onRetry={() => handleSubmit()} /></div>}
 
       {/* Loading state — only before any data has arrived */}
       {isLoading && (!displayResult || displayResult.dimensions.length === 0) && (
@@ -384,26 +382,26 @@ export function ChallengeView() {
               (i.e. once passed, always shown) so the recognition persists across visits. */}
           {bestScore >= 75 && (
             <div style={{
-              background: bestScore >= 90 ? 'var(--score-mid-bg)' : 'var(--score-high-bg)',
-              border: `1px solid ${bestScore >= 90 ? 'var(--score-mid)' : 'var(--score-high)'}`,
+              background: bestScore >= 85 ? 'var(--score-mid-bg)' : 'var(--score-high-bg)',
+              border: `1px solid ${bestScore >= 85 ? 'var(--score-mid)' : 'var(--score-high)'}`,
               borderRadius: 'var(--radius-lg)', padding: '16px 24px',
               display: 'flex', alignItems: 'center', gap: '12px',
               marginBottom: '24px',
             }}>
               <span style={{
                 display: 'inline-flex',
-                color: bestScore >= 90 ? 'var(--score-mid)' : 'var(--score-high)',
+                color: bestScore >= 85 ? 'var(--score-mid)' : 'var(--score-high)',
               }}>
-                {bestScore >= 90 ? <Icon.Trophy size={26} /> : <Icon.CheckCircle size={26} />}
+                {bestScore >= 85 ? <Icon.Trophy size={26} /> : <Icon.CheckCircle size={26} />}
               </span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p style={{ fontWeight: 'var(--fw-bold)', fontSize: 'var(--fs-h3)', color: 'var(--ink)' }}>
-                  {bestScore >= 90 ? 'Gold Star' : 'Challenge passed'}
+                  {bestScore >= 85 ? 'Gold Star!' : 'Challenge Passed!'}
                 </p>
                 <p style={{ fontSize: 'var(--fs-small)', color: 'var(--ink-2)' }}>
-                  {bestScore >= 90
+                  {bestScore >= 85
                     ? 'Exceptional prompt engineering. You nailed it.'
-                    : nextChallenge ? `You're ready for "${nextChallenge.title}".` : 'All challenges complete.'}
+                    : nextChallenge ? `You're ready for "${nextChallenge.title}".` : 'All challenges complete!'}
                 </p>
               </div>
               {nextChallenge && (
@@ -447,7 +445,6 @@ export function ChallengeView() {
               </div>
             )
           })()}
-
           {displayResult.source === 'persisted' && bestScore < 75 && (
             <div style={{
               background: 'var(--surface-quiet)', border: '1px solid var(--border)',
@@ -615,7 +612,6 @@ export function ChallengeView() {
               fill in each section as data arrives. */}
           {(displayResult.source === 'fresh' || (displayResult.source === 'persisted' && prog?.revealed)) && (
             <ExpertComparison
-              userScore={displayResult.overall_score ?? 0}
               revealData={exec.revealData}
               userExec={exec.userExec}
               expertExec={exec.expertExec}
@@ -693,12 +689,10 @@ function StepBlock({
 }
 
 function ExpertComparison({
-  userScore,
   revealData,
   userExec,
   expertExec,
 }: {
-  userScore: number
   revealData: ReturnType<typeof useExecute>['revealData']
   userExec: StreamState
   expertExec: StreamState
@@ -712,38 +706,12 @@ function ExpertComparison({
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const userDisplay = toDisplayScore(userScore)
-  const expertDisplay = revealData ? toDisplayScore(revealData.improved_overall_score) : null
-  const delta = expertDisplay != null ? expertDisplay - userDisplay : 0
-
   return (
     <div className="fade-in-up" style={{ marginBottom: '32px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '20px', flexWrap: 'wrap' }}>
         <h3 style={{ fontSize: 'var(--fs-h2)', fontWeight: 'var(--fw-bold)', color: 'var(--ink)' }}>
           Expert comparison
         </h3>
-        <div style={{ display: 'flex', gap: '16px', fontSize: 'var(--fs-body)', flexWrap: 'wrap', alignItems: 'center' }}>
-          <span style={{ color: 'var(--ink-2)' }}>
-            Your best: <strong style={{ color: scoreColor(userScore, true) }}>{userDisplay.toFixed(1)}/10</strong>
-          </span>
-          <span style={{ display: 'inline-flex', color: 'var(--ink-3)' }}><Icon.ArrowRight size={14} /></span>
-          {revealData ? (
-            <>
-              <span style={{ color: 'var(--ink-2)' }}>
-                Expert: <strong style={{ color: scoreColor(revealData.improved_overall_score, true) }}>{expertDisplay?.toFixed(1)}/10</strong>
-              </span>
-              {delta !== 0 && (
-                <span style={{ color: deltaColor(delta), fontWeight: 'var(--fw-bold)' }}>
-                  {formatDelta(delta)}
-                </span>
-              )}
-            </>
-          ) : (
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: 'var(--ink-2)' }}>
-              Expert: <Shimmer width={48} height={16} />
-            </span>
-          )}
-        </div>
       </div>
 
       <div style={{
@@ -785,8 +753,8 @@ function ExpertComparison({
         gridTemplateColumns: 'repeat(auto-fit, minmax(min(380px, 100%), 1fr))',
         gap: '16px',
       }}>
-        <ResponseCard title="AI response to your prompt" stream={userExec} />
-        <ResponseCard title="AI response to expert prompt" stream={expertExec} placeholder={!revealData} />
+        <ResponseCard title="AI Response to Your Prompt" stream={userExec} placeholder={!revealData || userExec.phase === 'idle'} />
+        <ResponseCard title="AI Response to Expert Prompt" stream={expertExec} placeholder={!revealData} />
       </div>
     </div>
   )

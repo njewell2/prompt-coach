@@ -18,7 +18,6 @@ export function Header({ user }: { user: AuthUser }) {
 
   const navLinks = [
     { path: '/', label: 'Training' },
-    { path: '/practice', label: 'Practice' },
     { path: '/progress', label: 'Progress' },
   ]
 

@@ -50,7 +50,7 @@ export function Leaderboard() {
     const newPulses = new Set<string>()
     for (const r of rows) {
       const prev = prevRanks.current.get(r.username)
-      if (prev && (prev.xp !== r.xp || prev.rank !== r.rank)) {
+      if (prev && prev.rank !== r.rank) {
         newPulses.add(r.username)
       }
     }

@@ -337,7 +337,7 @@ export function ProgressDashboard() {
                     const p = getProgress(c.id)
                     const best = p?.best_score ?? 0
                     const passed = best >= 75
-                    const gold = best >= 90
+                    const gold = best >= 85
                     return (
                       <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: 'var(--fs-small)' }}>
                         <span style={{
@@ -441,9 +441,6 @@ export function ProgressDashboard() {
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
             <Button onClick={() => navigate('/')} iconRight={<Icon.ArrowRight size={15} />}>
               Continue Training
-            </Button>
-            <Button variant="secondary" onClick={() => navigate('/practice')}>
-              Free Practice
             </Button>
           </div>
         </>

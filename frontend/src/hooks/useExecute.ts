@@ -13,7 +13,12 @@ export interface StreamState {
 
 const IDLE_STREAM: StreamState = { phase: 'idle', text: '' }
 
-type ExpertCacheEntry = { revealData: RevealResponse; expertExec: StreamState }
+type ExpertCacheEntry = {
+  revealData: RevealResponse
+  expertExec: StreamState
+  userExec?: StreamState
+  userPrompt?: string
+}
 const expertCache = new Map<string, ExpertCacheEntry>()
 
 export function hasExpertCacheFor(challengeId: string): boolean {
@@ -159,10 +164,6 @@ export function useExecute() {
     }
   }, [])
 
-  const updateUser = useCallback((patch: Partial<StreamState>) => {
-    setUserExec(prev => ({ ...prev, ...patch }))
-  }, [])
-  const replaceUser = useCallback((next: StreamState) => setUserExec(next), [])
   const updateExpert = useCallback((patch: Partial<StreamState>) => {
     setExpertExec(prev => ({ ...prev, ...patch }))
   }, [])
@@ -179,6 +180,17 @@ export function useExecute() {
     void streamExecute(improvedPrompt, ac.signal, updateExpert, replaceExpert)
   }, [updateExpert, replaceExpert])
 
+  const hydrateFromCache = useCallback((challengeId: string): boolean => {
+    const cached = expertCache.get(challengeId)
+    if (!cached) return false
+    abortRef.current?.abort()
+    abortRef.current = null
+    setRevealData(cached.revealData)
+    setExpertExec(cached.expertExec)
+    if (cached.userExec) setUserExec(cached.userExec)
+    return true
+  }, [])
+
   const revealAndExecuteBoth = useCallback(async (
     sessionToken: string | null,
     userPrompt: string,
@@ -190,13 +202,25 @@ export function useExecute() {
 
     setUserExec(IDLE_STREAM)
 
-    // Cache hit: hydrate expert from cache, only stream user.
+    // Cache hit on a fresh submission: hydrate expert from cache, stream the new user prompt.
     if (challengeId) {
       const cached = expertCache.get(challengeId)
       if (cached) {
         setRevealData(cached.revealData)
         setExpertExec(cached.expertExec)
-        void streamExecute(userPrompt, ac.signal, updateUser, replaceUser)
+        let capturedUser: StreamState = { phase: 'streaming', text: '' }
+        const captureUserUpdate = (patch: Partial<StreamState>) => {
+          capturedUser = { ...capturedUser, ...patch }
+          setUserExec(prev => ({ ...prev, ...patch }))
+        }
+        const captureUserReplace = (next: StreamState) => {
+          capturedUser = next
+          setUserExec(next)
+        }
+        await streamExecute(userPrompt, ac.signal, captureUserUpdate, captureUserReplace)
+        if (capturedUser.phase === 'done' && !ac.signal.aborted) {
+          expertCache.set(challengeId, { ...cached, userExec: capturedUser, userPrompt })
+        }
         return
       }
     }
@@ -207,8 +231,17 @@ export function useExecute() {
     const data = await reveal(sessionToken, ac.signal)
     if (!data || ac.signal.aborted) return
 
-    // Stream user in parallel.
-    void streamExecute(userPrompt, ac.signal, updateUser, replaceUser)
+    // Stream user in parallel and capture final state for cache.
+    let capturedUser: StreamState = { phase: 'streaming', text: '' }
+    const captureUserUpdate = (patch: Partial<StreamState>) => {
+      capturedUser = { ...capturedUser, ...patch }
+      setUserExec(prev => ({ ...prev, ...patch }))
+    }
+    const captureUserReplace = (next: StreamState) => {
+      capturedUser = next
+      setUserExec(next)
+    }
+    void streamExecute(userPrompt, ac.signal, captureUserUpdate, captureUserReplace)
 
     // Stream expert and capture final state into cache on success.
     let captured: StreamState = { phase: 'streaming', text: '' }
@@ -222,9 +255,14 @@ export function useExecute() {
     }
     await streamExecute(data.improved_prompt, ac.signal, captureUpdate, captureReplace)
     if (challengeId && captured.phase === 'done' && !ac.signal.aborted) {
-      expertCache.set(challengeId, { revealData: data, expertExec: captured })
+      expertCache.set(challengeId, {
+        revealData: data,
+        expertExec: captured,
+        userExec: capturedUser.phase === 'done' ? capturedUser : undefined,
+        userPrompt,
+      })
     }
-  }, [reveal, updateUser, replaceUser])
+  }, [reveal])
 
   return {
     revealData,
@@ -234,6 +272,7 @@ export function useExecute() {
     expertExec,
     revealAndExecuteBoth,
     executeExpertOnly,
+    hydrateFromCache,
     hasExpertCache: hasExpertCacheFor,
     reset,
   }

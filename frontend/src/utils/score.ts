@@ -2,7 +2,7 @@ export type ScoreLabel = 'Exceptional' | 'Strong' | 'Developing' | 'Needs Work' 
 
 export function scoreLabel(score: number, outOf100 = false): ScoreLabel {
   const n = outOf100 ? score : score * 10
-  if (n >= 90) return 'Exceptional'
+  if (n >= 85) return 'Exceptional'
   if (n >= 75) return 'Strong'
   if (n >= 55) return 'Developing'
   if (n >= 35) return 'Needs Work'

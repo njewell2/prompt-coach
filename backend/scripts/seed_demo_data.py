@@ -182,7 +182,7 @@ def _award_xp(conn, user_id: int, attempt_id: int, challenge: dict,
 
     if overall_score >= 75 and cid not in already_by_reason["pass"]:
         insert("pass", 20 * tier_mult, {"challenge_id": cid})
-    if overall_score >= 90 and cid not in already_by_reason["gold"]:
+    if overall_score >= 85 and cid not in already_by_reason["gold"]:
         insert("gold", 10 * tier_mult, {"challenge_id": cid})
     if overall_score >= 75 and attempt_number == 1 and cid not in already_by_reason["first_try"]:
         insert("first_try", 15, {"challenge_id": cid})
