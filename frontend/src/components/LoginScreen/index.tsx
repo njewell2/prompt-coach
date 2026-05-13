@@ -22,7 +22,7 @@ export function LoginScreen() {
   return (
     <div className="login-screen" style={{
       minHeight: '100vh',
-      background: 'var(--bg-secondary)',
+      background: 'var(--page-bg)',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
@@ -37,13 +37,13 @@ export function LoginScreen() {
       `}</style>
 
       {/* Brand row */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '28px' }}>
-        <CapTechLogo color="var(--captech-blue)" height={28} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '32px' }}>
+        <CapTechLogo color="var(--captech-blue)" height={32} />
         <span style={{
-          fontSize: 'var(--fs-h1)',
+          fontSize: 'var(--fs-display)',
           fontWeight: 'var(--fw-bold)',
           color: 'var(--ink)',
-          letterSpacing: '-0.01em',
+          letterSpacing: '-0.025em',
           lineHeight: 1,
         }}>
           Prompt Coach
@@ -59,7 +59,7 @@ export function LoginScreen() {
         width: '100%',
         maxWidth: '440px',
       }}>
-        <h2 style={{ fontSize: 'var(--fs-h1)', fontWeight: 'var(--fw-bold)', color: 'var(--ink)', margin: 0, marginBottom: '6px' }}>
+        <h2 style={{ fontSize: 'var(--fs-h1)', fontWeight: 'var(--fw-bold)', color: 'var(--ink)', margin: 0, marginBottom: '6px', letterSpacing: '-0.015em' }}>
           Start training
         </h2>
         <p style={{ fontSize: 'var(--fs-body)', color: 'var(--ink-3)', marginBottom: '24px', lineHeight: 1.5 }}>
@@ -114,7 +114,7 @@ export function LoginScreen() {
               onBlur={e => (e.target.style.borderColor = 'var(--border)')}
             />
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px' }}>
-              <span style={{ fontSize: 'var(--fs-micro)', color: 'var(--ink-4)' }}>Optional — but the whole room benefits.</span>
+              <span style={{ fontSize: 'var(--fs-micro)', color: 'var(--ink-4)' }}>Optional, but the whole room benefits.</span>
               <span style={{ fontSize: 'var(--fs-micro)', color: focusOver ? 'var(--score-low)' : 'var(--ink-4)' }}>
                 {focus.length}/{FOCUS_MAX}
               </span>
@@ -149,7 +149,7 @@ export function LoginScreen() {
       </div>
 
       <p style={{ marginTop: '18px', fontSize: 'var(--fs-micro)', color: 'var(--ink-4)', textAlign: 'center', maxWidth: '440px' }}>
-        Your email is only used to restore your progress — no account, no password.
+        Your email is only used to restore your progress. No account, no password.
       </p>
     </div>
   )

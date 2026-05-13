@@ -11,17 +11,20 @@ interface ScoreDisplayProps {
 export function ScoreDisplay({ score, size = 120, showLabel = true, label }: ScoreDisplayProps) {
   const displayScore = toDisplayScore(score)   // 0–10
   const [displayed, setDisplayed] = useState(0)
+  const [settled, setSettled] = useState(false)
 
   useEffect(() => {
     let frame: number
     const start = performance.now()
     const duration = 1200
+    setSettled(false)
 
     function tick(now: number) {
       const t = Math.min((now - start) / duration, 1)
       const eased = 1 - Math.pow(1 - t, 3)
       setDisplayed(eased * displayScore)
       if (t < 1) frame = requestAnimationFrame(tick)
+      else setSettled(true)
     }
 
     frame = requestAnimationFrame(tick)
@@ -37,7 +40,17 @@ export function ScoreDisplay({ score, size = 120, showLabel = true, label }: Sco
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-      <div style={{ position: 'relative', width: size, height: size }}>
+      <style>{`
+        @keyframes pc-score-settle {
+          0%   { transform: scale(1); }
+          40%  { transform: scale(1.04); }
+          100% { transform: scale(1); }
+        }
+      `}</style>
+      <div style={{
+        position: 'relative', width: size, height: size,
+        animation: settled ? 'pc-score-settle 600ms cubic-bezier(0.22, 1, 0.36, 1) both' : 'none',
+      }}>
         <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
           <circle
             cx={size / 2} cy={size / 2} r={r}
@@ -56,10 +69,10 @@ export function ScoreDisplay({ score, size = 120, showLabel = true, label }: Sco
           display: 'flex', flexDirection: 'column',
           alignItems: 'center', justifyContent: 'center',
         }}>
-          <span style={{ fontSize: size * 0.22, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>
+          <span style={{ fontSize: size * 0.22, fontWeight: 'var(--fw-bold)', color: 'var(--ink)', lineHeight: 1, fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.025em' }}>
             {displayed.toFixed(1)}
           </span>
-          <span style={{ fontSize: size * 0.11, color: 'var(--text-muted)', lineHeight: 1, marginTop: '1px' }}>
+          <span style={{ fontSize: size * 0.11, color: 'var(--ink-3)', lineHeight: 1, marginTop: '1px' }}>
             / 10
           </span>
           {showLabel && (
@@ -70,7 +83,7 @@ export function ScoreDisplay({ score, size = 120, showLabel = true, label }: Sco
         </div>
       </div>
       {label && (
-        <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 500 }}>{label}</span>
+        <span style={{ fontSize: 'var(--fs-micro)', color: 'var(--ink-3)', fontWeight: 'var(--fw-semi)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>{label}</span>
       )}
     </div>
   )

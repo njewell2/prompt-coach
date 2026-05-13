@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 
-const COUNT = 36
+const COUNT = 28
 const DURATION_MS = 2200
 
 interface Particle {
@@ -13,7 +13,12 @@ interface Particle {
   delay: number
 }
 
-const COLORS = ['#FDDA24', '#005DB9', '#00A5DF', '#003865', '#E8B923', '#FFFBE6']
+// Restricted palette: CapTech yellow, CapTech navy, ink-tinted white. No cyan, no medal-gold.
+const COLORS = [
+  'var(--captech-yellow)',
+  'var(--captech-navy)',
+  'var(--surface)',
+]
 
 export function Confetti({ show }: { show: boolean }) {
   const [visible, setVisible] = useState(false)

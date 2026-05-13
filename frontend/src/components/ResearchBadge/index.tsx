@@ -20,9 +20,18 @@ export function ResearchBadge({ citation }: ResearchBadgeProps) {
       padding: '10px 12px',
       background: 'var(--surface-quiet)',
       borderRadius: 'var(--radius-md)',
-      borderLeft: `4px solid ${color}`,
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+        <span
+          aria-hidden
+          style={{
+            width: '6px',
+            height: '6px',
+            borderRadius: '50%',
+            background: color,
+            flexShrink: 0,
+          }}
+        />
         <span style={{
           fontSize: 'var(--fs-micro)',
           fontWeight: 'var(--fw-bold)',

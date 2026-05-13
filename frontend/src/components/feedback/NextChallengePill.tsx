@@ -71,14 +71,14 @@ export function NextChallengePill({ title, nextNumber, totalChallenges, onClick 
         }
         .pc-next-pill-dismiss {
           position: absolute;
-          top: -8px;
-          right: -8px;
-          width: 22px;
-          height: 22px;
+          top: -10px;
+          right: -10px;
+          width: 28px;
+          height: 28px;
           border-radius: 50%;
           background: var(--captech-navy);
-          color: #fff;
-          border: 2px solid #fff;
+          color: var(--surface);
+          border: 2px solid var(--surface);
           cursor: pointer;
           display: inline-flex;
           align-items: center;
@@ -87,7 +87,7 @@ export function NextChallengePill({ title, nextNumber, totalChallenges, onClick 
           font-family: inherit;
         }
         .pc-next-pill-dismiss:hover {
-          background: #000;
+          background: var(--ink);
         }
         @media (max-width: 720px) {
           .pc-next-pill {

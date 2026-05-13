@@ -63,14 +63,14 @@ export function Leaderboard() {
   }, [data])
 
   if (loading) {
-    return <div style={{ padding: '24px', color: 'var(--text-muted)', fontSize: '13px' }}>Loading leaderboard…</div>
+    return <div style={{ padding: '24px', color: 'var(--ink-3)', fontSize: 'var(--fs-small)' }}>Loading leaderboard…</div>
   }
   if (!data || data.total === 0) {
     return (
       <div style={{
-        padding: '20px', background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)',
-        border: '1px solid var(--border)', textAlign: 'center', color: 'var(--text-muted)',
-        fontSize: '13px',
+        padding: '20px', background: 'var(--surface)', borderRadius: 'var(--radius-lg)',
+        border: '1px solid var(--border)', textAlign: 'center', color: 'var(--ink-3)',
+        fontSize: 'var(--fs-small)',
       }}>
         No one on the leaderboard yet. Complete a challenge to claim your spot.
       </div>
@@ -94,7 +94,6 @@ export function Leaderboard() {
         background: 'var(--surface)',
         border: '1px solid var(--border)',
         borderRadius: 'var(--radius-lg)',
-        boxShadow: 'var(--shadow-card)',
         overflow: 'hidden',
       }}>
         {rows.map((r, i) => (
