@@ -62,7 +62,10 @@ Action items: Priya → Stripe legal status by Mon; Dana → pricing page v2 by 
 3. "Thank you!! The team solved my billing issue in under an hour, amazing service."
 4. "Report generator times out for anything over 30 days. Had to split into 6 queries."
 5. "UI feels great and search is faster. One request: can we bulk-edit tags?"
-6. "Why did pricing go up without warning? About to switch providers if this isn't explained."`,
+6. "Why did pricing go up without warning? About to switch providers if this isn't explained."
+7. "Just want to say the new onboarding email is so much better than before, thanks!"
+8. "API has been throwing 500s intermittently for two days. Logs aren't helping."
+9. "Not sure if this is a bug, but exporting to PDF makes the charts look weird sometimes."`,
       goal: "You want a structured table you can paste into your team's Monday standup.",
     },
   },
@@ -81,8 +84,11 @@ Action items: Priya → Stripe legal status by Mon; Dana → pricing page v2 by 
       label: "Raw notes from today's 1:1s",
       body: `- Amy 10am still blocked on api access, waiting on IT for 3 days. wants me to escalate.
 - 1030 Jordan, promotion case ready for review. Need eng lead signoff by Fri.
-met w/ Priya @ 11: pricing rollout now delayed by 2 wks, wants me to tell sales this week`,
-      goal: 'You want these reformatted into a consistent {time | person | topic | action needed} structure so you can paste them into your weekly report.',
+met w/ Priya @ 11: pricing rollout now delayed by 2 wks, wants me to tell sales this week
+1140 — quick checkin w/ Sam: mentor pairing started, going well. nothing for me to do
+2pm Devon — flagged burnout risk, wants 1 day flex/wk for next month. I said yes pending HR
+3:30 Riley (not on cal, stopped by) — concerned the new OKRs feel imposed. raise at standup tmrw?`,
+      goal: 'You want these consolidated into a consistent structure you can paste into your weekly report.',
     },
   },
   {
@@ -114,17 +120,19 @@ met w/ Priya @ 11: pricing rollout now delayed by 2 wks, wants me to tell sales 
     hint: 'Specify what counts as an action item, how to rank priority (business impact? urgency?), what to exclude (unassigned ideas, backlog grooming), and the exact output fields (owner, deadline, priority).',
     unlock_after: 'b6',
     sample_content: {
-      label: 'Meeting notes: Q3 product planning',
-      body: `Attendees: Priya (PM), Marcus (Eng lead), Dana (Design), Tom (Sales)
+      label: 'Meeting notes: launch-readiness sync',
+      body: `Attendees: Lin (PM, owner), Marcus (Eng), Dana (Design), Sara (Support), Jen (Marketing), Tom (Sales)
+Topic: Launch readiness for the new search experience (GA Oct 14)
 
-1. Pricing rework is the #1 request from enterprise prospects. Dana has mockups of a new pricing page; Tom says 3 of our last 5 lost deals cited unclear pricing.
-2. Mobile bug backlog has grown to 47 issues. Marcus proposes a 2-week "fix-it" sprint in October. Concern: blocks the payments migration.
-3. Payments migration to Stripe Billing: infra ready, but legal review pending — likely 3 more weeks. Tom flagged that one enterprise customer is stalling their renewal on it.
-4. Hiring: 2 senior engineer reqs open for 6 weeks, only 4 qualified candidates in pipeline. Marcus wants to try a contract-to-hire route.
-5. OKRs for Q4 due by Sept 30. Priya will circulate a draft Friday. Current leading candidates: (a) ship new pricing, (b) cut mobile P0 bugs by 50%, (c) complete Stripe migration.
+1. Beta cohort: 8 of 12 customers say onboarding "takes longer than expected." Sara has the breakdown. Tom pushed to ship anyway because the lead customer's GA contract is already signed; Lin held the line — investigate before committing.
+2. Performance: Marcus showed p95 latency on /search at 2.4s vs. an 800ms target. Two suspects: cold cache and a ranking model regression. He'll bring a working theory Friday.
+3. Launch page: Jen's page is on staging; integrations list (Slack, Salesforce, HubSpot) is pending final copy. Notion came up in 3 enterprise demos this week — group debated, then deferred Notion to v1.1 rather than slip launch.
+4. Pricing tier names: Dana proposed "Starter / Team / Scale"; Tom prefers "Standard / Pro / Enterprise." No decision — Lin tabled it for a separate working session.
+5. Support readiness: Sara has been waiting three weeks for the new billing-flow runbook from eng. Marcus committed to a draft by end of next week.
+6. Legal: Lin spoke with legal yesterday on the updated ToS — about 5 more business days.
 
-Decisions: fix-it sprint approved contingent on legal finishing Stripe review first. Priya to follow up with legal Monday.
-Action items: Priya → Stripe legal status by Mon; Dana → pricing page v2 by next Thurs; Marcus → contract-to-hire proposal by Wed.`,
+Decisions: GA slipped from Oct 7 to Oct 14; search latency is a launch-blocker; Notion integration deferred to v1.1.
+Open: pricing tier names; ToS final wording.`,
       goal: 'You want a prioritized action-item list with owner, deadline, and priority, ready to paste into your project tracker.',
     },
   },
@@ -141,16 +149,16 @@ Action items: Priya → Stripe legal status by Mon; Dana → pricing page v2 by 
     unlock_after: 'i2',
     sample_content: {
       label: 'NPS survey comments: last quarter',
-      body: `1. The product has replaced three tools for us. Pricing is high but we can justify it for now. — SaaS Co
-2. Love it, but the mobile experience still feels like an afterthought. — Finance team
-3. Support is excellent. Documentation is not. — Engineering lead
-4. Simple to set up for my team. Wish the reporting was deeper. — Ops manager
-5. We'd pay more if we got better SSO options. Currently blocked on rollout. — IT lead
-6. Great tool. Slack integration works about 80% of the time. — PM
-7. Way too many emails. Can't find the settings to turn them off. — Marketer
-8. The search is the weakest part. We often end up using browser Ctrl+F. — Recruiter
-9. Customer success rep is amazing. Product is fine, CS is the reason we renewed. — Director
-10. The data export times out on large datasets. Had to build a workaround. — Analyst`,
+      body: `1. Replaces three tools for us. Pricing is high but we can justify it for now. — SaaS Co
+2. Love it, but the mobile experience still feels like an afterthought — half my team won't open it on a phone. — Finance team
+3. Product is fine. Customer success is the reason we renewed. — Director
+4. Simple to set up. Reporting depth isn't there — we export to Sheets to slice it the way we need. — Ops manager
+5. Slack integration drops messages randomly. Maybe 80% reliable. — PM
+6. Mobile push notifications fire hours late or not at all. — PM
+7. Salesforce integration broke twice last quarter — silent failures, we didn't catch it until reports were off. — RevOps
+8. Data export times out on large datasets. Had to build a workaround. — Analyst
+9. Mobile is unusable for approvals on the go. Have to wait until I'm at a laptop. — Sales lead
+10. Reporting can't roll up across teams without manual stitching. — Finance lead`,
       goal: 'You want 3–4 recurring themes with counts and supporting quotes, formatted for a quarterly business review.',
     },
   },
